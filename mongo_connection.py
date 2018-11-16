@@ -6,10 +6,6 @@ collection = database.users_data
 
 
 
-#localhost:27017
-
-
-
 def insert(login_details):
     result = collection.insert_one(login_details).inserted_id
 
@@ -19,6 +15,3 @@ def insert(login_details):
     else:
         print("The data insertion resulted in failure.......")
         return False
-
-
-test = insert({"username": "banu", "password": "Sethu@143"})
