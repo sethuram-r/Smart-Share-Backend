@@ -1,7 +1,7 @@
-from flask import Flask,request
+from flask import Flask,request,jsonify
 
 import mongo_connection as mc
-import json
+
 
 
 app = Flask(__name__)
@@ -10,9 +10,6 @@ app = Flask(__name__)
 @app.route('/login',methods=['POST'])
 def insert():
      received_data = str(request.data).replace("b","",1).replace("'","").strip()
-
-     print("received_data",received_data)
-     print("received_data", received_data.split(","))
 
      login_credentials = {
          "username": "",
@@ -24,10 +21,21 @@ def insert():
      if (received_data.split(",")[1].split(":")[0] == "password"):
          login_credentials["password"] = received_data.split(",")[1].split(":")[1]
 
-     print(login_credentials)
-     print(json.dumps(login_credentials))
-     return mc.insert(json.dumps(login_credentials))
 
+
+     result = mc.insert(login_credentials)
+
+
+
+
+     if (result) != "":
+         print("The User data is inserted successfully.......")
+         return  jsonify({"status":True})
+     else:
+         print("The data insertion resulted in failure.......")
+         return jsonify({"status":False})
+
+     return
 
 if __name__ == '__main__':
     app.run()
