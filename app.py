@@ -23,7 +23,7 @@ def data_extraction(data):
 
 
 
-@app.route('/login',methods=['POST'])
+@app.route('/signup',methods=['POST'])
 def insert():
      received_data = str(request.data).replace("b","",1).replace("'","").strip()
 
@@ -46,16 +46,15 @@ def insert():
          print("The data insertion resulted in failure.......")
          return jsonify({"status":False})
 
-     return # have to check why this exists ?
    
-@app.route('/signin', method = "POST")
+@app.route('/signin', methods=['POST'])
 def find_one():
     login_credentials = data_extraction(request.data)
     result = mc.find_one(login_credentials)
     if (result) != "":
          print("The User data is exists .......")
          return  jsonify({"status":True})
-     else:
+    else:
          print("The data doesn't exists.......")
          return jsonify({"status":False})
     
