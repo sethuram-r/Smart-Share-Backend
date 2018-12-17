@@ -1,6 +1,7 @@
 from flask import Flask,request,jsonify
 
 import mongo_connection as mc
+import amazon_s3_connection as s3
 
 
 
@@ -56,8 +57,27 @@ def find_one():
     else:
          print("The data doesn't exists.......")
          return jsonify({"status":False})
+
+@app.route('/validate', methods=['POST'])
+def validate_user():
+    credentials = data_extraction(request.data)
+    result = mc.find_one(credentials)
+    print(credentials)
+    if (result) != "":
+         print("The User data is exists .......")
+         return  jsonify({"status":True})
+    else:
+         print("The data doesn't exists.......")
+         return jsonify({"status":False})
+
+
+@app.route('/getObjects', methods=['GET'])
+def send_objects():
+    return jsonify(s3.list_objects("file.server.1"))
+
     
 
 
 if __name__ == '__main__':
     app.run()
+
