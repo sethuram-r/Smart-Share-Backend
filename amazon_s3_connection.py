@@ -5,8 +5,8 @@ import datetime
 from dateutil.tz import tzutc
 
 
-client=boto3.client('s3',aws_access_key_id="AKIAJ3R7O7X5DXLQWT6A",
-                      aws_secret_access_key="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",
+client=boto3.client('s3',aws_access_key_id="access",
+                      aws_secret_access_key="pwd",
                       region_name="eu-west-1")
 
 
@@ -27,6 +27,7 @@ def data_structure_transformer(value):
     def branch_assignment(name):
         temp = {}
         temp["name"] = name
+        temp["trueName"]
         temp["children"] = None
         return temp
 
