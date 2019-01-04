@@ -5,9 +5,7 @@ import datetime
 from dateutil.tz import tzutc
 
 
-client=boto3.client('s3',aws_access_key_id="access",
-                      aws_secret_access_key="pwd",
-                      region_name="eu-west-1")
+
 
 
 def data_structure_transformer(value):
@@ -21,13 +19,14 @@ def data_structure_transformer(value):
     def leaf_assignemnt(object, root_folder_name):
         temp = {}
         temp["name"] = object["objectName"].replace(root_folder_name, "").strip()
+        temp["trueName"] = object["objectName"]
         temp["value"] = round(object["size"]/1024,2)
         return temp
 
-    def branch_assignment(name):
+    def branch_assignment(original_name,name):
         temp = {}
         temp["name"] = name
-        temp["trueName"]
+        temp["trueName"] = original_name
         temp["children"] = None
         return temp
 
@@ -44,7 +43,7 @@ def data_structure_transformer(value):
         if folder_name == "" or folder_name not in i["objectName"]:
             if "/" in i["objectName"] and i["objectName"].count("/") == 1:
                 folder_name = i["objectName"]
-                rjson["children"].append(branch_assignment(i["objectName"].replace("/", "").strip()))
+                rjson["children"].append(branch_assignment(i["objectName"],i["objectName"].replace("/", "").strip()))
             elif file_extension.search(i["objectName"]) and "/" not in i["objectName"]:
                 rjson["children"].append(leaf_assignemnt(i, folder_name))
         else:
@@ -57,7 +56,7 @@ def data_structure_transformer(value):
                 start_position["children"].append(leaf_assignemnt(i, folder_name))
             elif folder_name in i["objectName"]:
                 start_position["children"].append(
-                    branch_assignment(i["objectName"].replace(folder_name, "").replace("/", "")))
+                    branch_assignment(i["objectName"],i["objectName"].replace(folder_name, "").replace("/", "")))
                 folder_name = i["objectName"]
             else:
                 rjson["children"].append(leaf_assignemnt(i, folder_name))
@@ -85,3 +84,8 @@ def list_buclets():
 def list_objects(bucket_name):
     pp.pprint(client.list_objects(Bucket = bucket_name))
     return data_structure_transformer(filter_objects(client.list_objects(Bucket = bucket_name)))
+
+def get_object(bucket,key):
+    response = client.get_object(Bucket=bucket,Key=key)
+    print(response)
+    return response["Body"].read()

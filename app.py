@@ -75,7 +75,11 @@ def validate_user():
 def send_objects():
     return jsonify(s3.list_objects("file.server.1"))
 
-    
+
+@app.route('/getObject', methods=['GET'])
+def get_object():
+    return s3.get_object("file.server.1",request.args.get('key'))
+
 
 
 if __name__ == '__main__':
