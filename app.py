@@ -6,11 +6,13 @@ import amazon_s3_connection as s3
 
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
 
 def data_extraction(data):
+
     extracted_data = str(data).replace("b","",1).replace("'","").strip()
-    print(extracted_data)
+    # print(extracted_data)
     login_credentials = {}
     if (extracted_data.split(",")[0].split(":")[0] == "user_name"):
          login_credentials["username"] = extracted_data.split(",")[0].split(":")[1]
@@ -18,7 +20,12 @@ def data_extraction(data):
          login_credentials["password"] = extracted_data.split(",")[1].split(":")[1]
     if (extracted_data.split(",")[1].split(":")[0] == "sessionId"):
          login_credentials["authentication_server_sessionId"] = extracted_data.split(",")[1].split(":")[1]
+    if (extracted_data.split(",")[0].split(":")[0] == "file"):
+        login_credentials["file"] = extracted_data.split(",")[0].split(":")[1]
+    # if (extracted_data.split(",")[1].split(":")[0] == "name"):
+    #     login_credentials["file_name"] = extracted_data.split(",")[0].split(":")[1]
     print(login_credentials)
+
     return login_credentials
          
 
@@ -79,6 +86,31 @@ def send_objects():
 @app.route('/getObject', methods=['GET'])
 def get_object():
     return s3.get_object("file.server.1",request.args.get('key'))
+
+@app.route('/uploadObject', methods=['POST'])
+def upload_object():
+    import json
+    files = json.loads(str(request.data).replace("b","",1).replace("'",""))
+    results = []
+    for file in files:
+        results.append(s3.upload_object(file))
+
+    for result in results:
+        if  (result):
+            return jsonify({"status": True})
+        else:
+            return jsonify({"status": False})
+
+
+
+
+
+
+
+
+
+
+
 
 
 

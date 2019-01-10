@@ -7,7 +7,6 @@ from dateutil.tz import tzutc
 
 
 
-
 def data_structure_transformer(value):
     import pprint as pp
     import re
@@ -89,3 +88,16 @@ def get_object(bucket,key):
     response = client.get_object(Bucket=bucket,Key=key)
     print(response)
     return response["Body"].read()
+
+def upload_object(file):
+    import base64
+    print(file["name"])
+    print(file["path"])
+    body = base64.b64decode(file["file"])
+    if(file["path"] =="file.server.1"):
+        file_name = file["name"]
+    else:
+        file_name = file["path"] + file["name"]
+
+    result =  client.put_object(Bucket='file.server.1', ACL='public-read', Body=body, Key=file_name)
+    return result["VersionId"]
