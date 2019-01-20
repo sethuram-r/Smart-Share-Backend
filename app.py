@@ -1,12 +1,10 @@
-from flask import Flask,request,jsonify
+from flask import Flask, request, jsonify
 
-import mongo_connection as mc
 import amazon_s3_connection as s3
-
-
+import mongo_connection as mc
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 * 1024
 
 
 def data_extraction(data):
@@ -100,6 +98,24 @@ def upload_object():
             return jsonify({"status": True})
         else:
             return jsonify({"status": False})
+
+
+@app.route('/deleteObjects', methods=['POST'])
+def delete_objects():
+    import json
+    objects = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
+    print(objects)
+    results = []
+
+    results.append(s3.delete_objects(objects))
+    print(results)
+
+    if (False in results):
+        return jsonify({"status": False})
+    else:
+        return jsonify({"status": True})
+
+
 
 
 
