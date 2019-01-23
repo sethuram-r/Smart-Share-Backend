@@ -1,4 +1,7 @@
 import pprint as pp
+import threading
+
+import redis_connection as rc
 
 
 def data_structure_transformer(value):
@@ -105,8 +108,24 @@ def list_objects(bucket_name):
 
 def get_object(bucket, key):
     response = client.get_object(Bucket=bucket, Key=key)
-    # print(response)
-    return response["Body"].read()
+    import base64
+    base64_encoded_value = base64.standard_b64encode(response["Body"].read())
+
+    def worker():
+        status = rc.insert_object(key, base64_encoded_value)
+        print(status)
+
+    if base64_encoded_value:
+        # Used thread to implement Async performance rather than synchronous  way.
+        try:
+            thread = threading.Thread(target=worker)
+            thread.daemon = True
+            thread.start()
+        except:
+            print("Error: unable to insert into Cache")
+        return base64_encoded_value
+    else:
+        return "Failure"
 
 
 def upload_object(file):
@@ -116,8 +135,19 @@ def upload_object(file):
         file_name = file["name"]
     else:
         file_name = file["path"] + file["name"]
-
     result = client.put_object(Bucket='file.server.1', ACL='public-read', Body=body, Key=file_name)
+
+    def worker():
+        status = rc.insert_object(file_name, file["file"])
+        print(status)
+
+    if result["VersionId"]:
+        try:
+            thread = threading.Thread(target=worker)
+            thread.daemon = True
+            thread.start()
+        except:
+            print("Error: unable to update the Cache")
     return result["VersionId"]
 
 

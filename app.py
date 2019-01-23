@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 
 import amazon_s3_connection as s3
 import mongo_connection as mc
+import redis_connection as rc
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 * 1024
@@ -83,7 +84,25 @@ def send_objects():
 
 @app.route('/getObject', methods=['GET'])
 def get_object():
-    return s3.get_object("file.server.1",request.args.get('key'))
+    key = request.args.get('key')
+    if rc.exists(key) == 1:
+        data_from_cache = rc.get_object(key)
+        print("returned from cache")
+        return data_from_cache
+    else:
+        data_from_s3 = s3.get_object("file.server.1", key)
+        return data_from_s3
+
+
+
+
+
+
+
+
+
+
+
 
 @app.route('/uploadObject', methods=['POST'])
 def upload_object():
