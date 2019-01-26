@@ -85,23 +85,13 @@ def send_objects():
 @app.route('/getObject', methods=['GET'])
 def get_object():
     key = request.args.get('key')
-    if rc.exists(key) == 1:
+    if rc.exists("cache:" + key) == 1:
         data_from_cache = rc.get_object(key)
         print("returned from cache")
         return data_from_cache
     else:
         data_from_s3 = s3.get_object("file.server.1", key)
         return data_from_s3
-
-
-
-
-
-
-
-
-
-
 
 
 @app.route('/uploadObject', methods=['POST'])
@@ -135,17 +125,35 @@ def delete_objects():
         return jsonify({"status": True})
 
 
+@app.route('/lockObjects', methods=['POST'])
+def lock_objects():
+    import json
+    objects = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
+    results = []
+    lock = rc.lock(objects["task"])
+    print(lock)
+    for object in objects["data"]:
+        results.append(lock(object))
+    print(results)
+    if (False in results):
+        return jsonify({"status": False})
+    else:
+        return jsonify({"status": True})
 
 
-
-
-
-
-
-
-
-
-
+@app.route('/lockStatus', methods=['POST'])
+def lock_status():
+    import json
+    object = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
+    if rc.exists("lock:" + object["key"]):
+        lock_status = rc.loack_status(object["key"])
+        print(lock_status)
+    else:
+        return jsonify({"status": True})
+    if str(lock_status).replace("b", "", 1).replace("'", "") == "Yes":
+        return jsonify({"status": True})
+    else:
+        return jsonify({"status": False})
 
 
 

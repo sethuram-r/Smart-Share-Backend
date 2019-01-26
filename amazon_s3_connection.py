@@ -75,7 +75,8 @@ def data_structure_transformer(value):
                 start_position["children"].append(leaf_assignemnt(i))
             else:
                 start_position["children"].append(branch_assignment(i["objectName"],
-                                                                    i["objectName"].replace(previous_split, "").replace(
+                                                                    i["objectName"].replace(previous_split, "",
+                                                                                            1).replace(
                                                                         "/", "").strip()))
                 previous_split = i["objectName"]
     pp.pprint(rjson)
