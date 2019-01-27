@@ -1,3 +1,7 @@
+import json
+import re
+import threading
+
 from flask import Flask, request, jsonify
 
 import amazon_s3_connection as s3
@@ -83,10 +87,11 @@ def send_objects():
 
 
 @app.route('/getObject', methods=['GET'])
-def get_object():
+def get_object(object=""):
     key = request.args.get('key')
+    if object: key = object
     if rc.exists("cache:" + key) == 1:
-        data_from_cache = rc.get_object(key)
+        data_from_cache = rc.get_object("cache:" + key)
         print("returned from cache")
         return data_from_cache
     else:
@@ -96,30 +101,68 @@ def get_object():
 
 @app.route('/uploadObject', methods=['POST'])
 def upload_object():
-    import json
-    files = json.loads(str(request.data).replace("b","",1).replace("'",""))
+    files = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
     results = []
-    for file in files:
-        results.append(s3.upload_object(file))
 
-    for result in results:
-        if  (result):
-            return jsonify({"status": True})
+    def worker():
+        print("worker started")
+        file_extension = re.compile("([a-zA-Z0-9\s_\\.\-\(\):])+(\..*)$")
+        if files[0]["name"] == "":
+            path = s3.one_folder_up(files[0]["path"])
         else:
-            return jsonify({"status": False})
+            path = files[0]["path"]
+        objects = rc.get_keys(pattern="backup:" + path + "*")
+        files_from_backup = []
+        for object in objects:
+            object = str(object).replace("b", "", 1).replace("'", "").strip()
+            backup_file = {}
+            if file_extension.search(object):
+                backup_file["path"] = s3.one_folder_up(object.replace("backup:", "").strip())
+                backup_file["name"] = list(filter(None, object.split("/")))[-1]
+                backup_file["file"] = rc.get_object(object)
+            else:
+                backup_file["path"] = object.replace("backup:", "").strip()
+                backup_file["name"] = ""
+                backup_file["file"] = ""
+
+            files_from_backup.append(backup_file)
+        for each_backup_file in files_from_backup:
+            s3.upload_object(each_backup_file)
+
+
+    for file in files:
+        version_id = s3.upload_object(file)
+        if (version_id): results.append(True)
+
+    print(results)
+    if (False in results):
+        print("inside rollback")
+        try:
+            thread = threading.Thread(target=worker)
+            thread.daemon = True
+            thread.start()
+        except:
+            print("Error: unable to Rollback")
+        return jsonify({"status": False})
+    else:
+        return jsonify({"status": True})
+
 
 
 @app.route('/deleteObjects', methods=['POST'])
 def delete_objects():
-    import json
     objects = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
-    print(objects)
     results = []
-
     results.append(s3.delete_objects(objects))
     print(results)
-
     if (False in results):
+        print("inside rollback")
+        try:
+            thread = threading.Thread(target=s3.roll_back, args=(objects["Objects"],))
+            thread.daemon = True
+            thread.start()
+        except:
+            print("Error: unable to Rollback")
         return jsonify({"status": False})
     else:
         return jsonify({"status": True})
@@ -127,13 +170,19 @@ def delete_objects():
 
 @app.route('/lockObjects', methods=['POST'])
 def lock_objects():
-    import json
     objects = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
     results = []
+    file_extension = re.compile("([a-zA-Z0-9\s_\\.\-\(\):])+(\..*)$")
     lock = rc.lock(objects["task"])
-    print(lock)
     for object in objects["data"]:
+        content = ""
+        if file_extension.search(object): content = get_object(object)
+
+        # Creating and Deleting Savepoint
+        savepoint, arg = rc.savepoint(objects["task"], key=object, data=content)
+        savepoint(**arg)
         results.append(lock(object))
+
     print(results)
     if (False in results):
         return jsonify({"status": False})
@@ -143,7 +192,6 @@ def lock_objects():
 
 @app.route('/lockStatus', methods=['POST'])
 def lock_status():
-    import json
     object = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
     if rc.exists("lock:" + object["key"]):
         lock_status = rc.loack_status(object["key"])

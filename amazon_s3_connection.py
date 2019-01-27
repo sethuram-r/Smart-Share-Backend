@@ -155,3 +155,32 @@ def upload_object(file):
 def delete_objects(objects):
     result = client.delete_objects(Bucket='file.server.1', Delete=objects)
     return result["Deleted"][0]["DeleteMarker"]
+
+
+def one_folder_up(path):
+    splitted_path = list(filter(None, path.split("/")))
+    del splitted_path[-1]
+    return ("/".join(splitted_path) + "/")
+
+
+def roll_back(files):
+    import re
+    print("worker started")
+    file_extension = re.compile("([a-zA-Z0-9\s_\\.\-\(\):])+(\..*)$")
+    objects = rc.get_keys(pattern="backup:" + files[0]["Key"] + "*")
+    files_from_backup = []
+    for object in objects:
+        object = str(object).replace("b", "", 1).replace("'", "").strip()
+        backup_file = {}
+        if file_extension.search(object):
+            backup_file["path"] = one_folder_up(object.replace("backup:", "").strip())
+            backup_file["name"] = list(filter(None, object.split("/")))[-1]
+            backup_file["file"] = rc.get_object(object)
+        else:
+            backup_file["path"] = object.replace("backup:", "").strip()
+            backup_file["name"] = ""
+            backup_file["file"] = ""
+
+        files_from_backup.append(backup_file)
+    for each_backup_file in files_from_backup:
+        upload_object(each_backup_file)

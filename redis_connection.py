@@ -10,7 +10,7 @@ def exists(key):
 
 
 def get_object(key):
-    return redis_client.hmget("cache:" + key, "content")[0]
+    return redis_client.hmget(key, "content")[0]
 
 
 def insert_object(key, data):
@@ -22,7 +22,7 @@ def insert_object(key, data):
 
 
 def insert_lock(key):
-    response = redis_client.set("lock:" + key, "No", ex=300)
+    response = redis_client.set("lock:" + key, "No", ex=150)
     return response
 
 
@@ -45,3 +45,26 @@ def lock(task):
 
 def type_of_key(key):
     return redis_client.type(key)
+
+
+def create_savepoint(**arg):
+    row = {"content": arg["data"], "timestamp": "{:%Y-%b-%d %H:%M:%S}".format(datetime.datetime.now())}
+    insertion_result = redis_client.hmset("backup:" + arg["key"], row)
+    print(insertion_result)
+    return insertion_result
+
+
+def delete_savepoint(**arg):
+    delete_result = redis_client.delete("backup:" + arg["key"])
+    return delete_result
+
+
+def savepoint(task, **arg):
+    if task == "lock":
+        return create_savepoint, {"key": arg["key"], "data": arg["data"]}
+    else:
+        return delete_savepoint, {"key": arg["key"]}
+
+
+def get_keys(pattern):
+    return redis_client.keys(pattern)
