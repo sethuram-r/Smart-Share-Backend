@@ -27,11 +27,12 @@ def insert_lock(key):
 
 
 def release_lock(key):
+    """Inside Release lock"""
     response = redis_client.set("lock:" + key, "Yes")
     return response
 
 
-def loack_status(key):
+def lock_status(key):
     response = redis_client.get("lock:" + key)
     return response
 
@@ -46,13 +47,11 @@ def lock(task):
 def type_of_key(key):
     return redis_client.type(key)
 
-
 def create_savepoint(**arg):
     row = {"content": arg["data"], "timestamp": "{:%Y-%b-%d %H:%M:%S}".format(datetime.datetime.now())}
     insertion_result = redis_client.hmset("backup:" + arg["key"], row)
     print(insertion_result)
     return insertion_result
-
 
 def delete_savepoint(**arg):
     delete_result = redis_client.delete("backup:" + arg["key"])

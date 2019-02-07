@@ -83,7 +83,8 @@ def validate_user():
 
 @app.route('/getObjects', methods=['GET'])
 def send_objects():
-    return jsonify(s3.list_objects("file.server.1"))
+    username = request.args.get('username')
+    return jsonify(s3.list_objects("file.server.1", username))
 
 
 @app.route('/getObject', methods=['GET'])
@@ -101,11 +102,17 @@ def get_object(object=""):
 
 @app.route('/uploadObject', methods=['POST'])
 def upload_object():
-    files = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
+    print(request.data)
+    data = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
+    ownername = data["owner"]
+    access_collection = mc.return_collection("users_access_data")
+    files = data["data"]
     results = []
+    folder_access = []
 
     def worker():
         print("worker started")
+        access_collection.delete_many(folder_access)
         file_extension = re.compile("([a-zA-Z0-9\s_\\.\-\(\):])+(\..*)$")
         if files[0]["name"] == "":
             path = s3.one_folder_up(files[0]["path"])
@@ -131,10 +138,26 @@ def upload_object():
 
 
     for file in files:
+        folder_access_temp = {}
+        folder_access_temp["owner"] = ownername
+        folder_access_temp["file"] = file["path"] + file["name"]
+        users_accessing_object = []
+        user_accessing_object = {}
+        user_accessing_object["name"] = ownername
+        user_accessing_object["read"] = True
+        user_accessing_object["write"] = True
+        user_accessing_object["delete"] = True
+        users_accessing_object.append(user_accessing_object)
+        folder_access_temp["accessing_users"] = users_accessing_object
+        folder_access.append(folder_access_temp)
+
         version_id = s3.upload_object(file)
-        if (version_id): results.append(True)
+        if (version_id):
+            results.append(True)
 
     print(results)
+    print(folder_access)
+    access_collection.insert_many(folder_access)
     if (False in results):
         print("inside rollback")
         try:
@@ -152,14 +175,39 @@ def upload_object():
 @app.route('/deleteObjects', methods=['POST'])
 def delete_objects():
     objects = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
+    data = objects["Objects"]
+    username = objects["owner"]
+    del objects["owner"]
+    folder_access = []
+    backups = []
+
+    for file in data:
+        folder_access_temp = {}
+        folder_access_temp["owner"] = username
+        folder_access_temp["file"] = file["Key"]
+        backup = mc.find_one(folder_access_temp, mc.return_collection("users_access_data"))
+        del backup["_id"]
+        backups.append(backup)
+        folder_access.append(folder_access_temp)
+
+    print("backup", backups)
+    mc.delete_many(folder_access, mc.return_collection("users_access_data"))
     results = []
     results.append(s3.delete_objects(objects))
     print(results)
+
+    def worker():
+        access_collection = mc.return_collection("users_access_data")
+        access_collection.insert_many(backups)
+
     if (False in results):
         print("inside rollback")
         try:
+            delete_roll_back_thread = threading.Thread(target=worker())
             thread = threading.Thread(target=s3.roll_back, args=(objects["Objects"],))
             thread.daemon = True
+            delete_roll_back_thread.daemon = True
+            delete_roll_back_thread.start()
             thread.start()
         except:
             print("Error: unable to Rollback")
@@ -177,7 +225,6 @@ def lock_objects():
     for object in objects["data"]:
         content = ""
         if file_extension.search(object): content = get_object(object)
-
         # Creating and Deleting Savepoint
         savepoint, arg = rc.savepoint(objects["task"], key=object, data=content)
         savepoint(**arg)
@@ -194,7 +241,7 @@ def lock_objects():
 def lock_status():
     object = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
     if rc.exists("lock:" + object["key"]):
-        lock_status = rc.loack_status(object["key"])
+        lock_status = rc.lock_status(object["key"])
         print(lock_status)
     else:
         return jsonify({"status": True})
@@ -202,6 +249,86 @@ def lock_status():
         return jsonify({"status": True})
     else:
         return jsonify({"status": False})
+
+
+@app.route('/accessRequest', methods=['Get'])
+def access_request():
+    path = request.args.get('path')
+    username = request.args.get('username')
+    access = request.args.get('access')
+    owner = request.args.get('owner')
+    collection = mc.return_collection("user_access_request")
+    parameter = {"file": path, "owner": owner, "username": username, "access": access, "status": "ongoing"}
+    print("parameter", parameter)
+    result = mc.insert(parameter, collection)
+    print("result", result.inserted_id)
+    if (result.inserted_id):
+        return jsonify({"status": True})
+    else:
+        return jsonify({"status": False})
+
+
+@app.route('/getAccessRequests', methods=['Get'])
+def requested_access():
+    username = request.args.get('username')
+    role = request.args.get('role')
+    collection = mc.return_collection("user_access_request")
+    filter = {role: username}
+    # print(filter)
+    return jsonify(mc.find(filter, collection))
+
+
+@app.route('/requestStatus', methods=['POST'])
+def request_status():
+    object = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
+    print(object)
+    if object["status"] == "approve":
+        del object["status"]
+        access_collection = mc.return_collection("users_access_data")
+        parameter_to_find = {"file": object["file"], "owner": object["owner"]}
+        find_result = mc.find_one(parameter_to_find, access_collection)
+        del find_result["_id"]
+        replacing_result = s3.create_replace_record(find_result, object)
+        result = mc.replace(parameter_to_find, replacing_result, access_collection)
+        print(result.modified_count)
+        if result.modified_count == 1:
+            collection = mc.return_collection("user_access_request")
+            replace_result = s3.status_change(collection, object, "approved")
+            if replace_result.modified_count == 1:
+                return jsonify({"status": True})
+            else:
+                return jsonify({"status": False})
+
+    else:
+        collection = mc.return_collection("user_access_request")
+        replace_result = s3.status_change(collection, object, "rejected")
+        if replace_result.modified_count == 1:
+            return jsonify({"status": True})
+        else:
+            return jsonify({"status": False})
+
+
+@app.route('/deleteRecord', methods=['POST'])
+def delete_record():
+    object = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
+    collection = mc.return_collection("user_access_request")
+    result = mc.delete_one(object, collection)
+    if result.deleted_count == 1:
+        return jsonify({"status": True})
+    else:
+        return jsonify({"status": False})
+
+
+@app.route('/getAccessedRecords', methods=['Get'])
+def accessed_records():
+    username = request.args.get('username')
+    access_collection = mc.return_collection("users_access_data")
+    filter = {"owner": username}
+    result = s3.file_accesses_others(mc.find(filter, access_collection))
+    print(result)
+    return jsonify(result)
+
+
 
 
 

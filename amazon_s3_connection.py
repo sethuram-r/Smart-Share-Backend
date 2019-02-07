@@ -1,10 +1,11 @@
 import pprint as pp
 import threading
 
+import mongo_connection as mc
 import redis_connection as rc
 
 
-def data_structure_transformer(value):
+def data_structure_transformer(value, username):
     import pprint as pp
     import re
 
@@ -21,6 +22,16 @@ def data_structure_transformer(value):
         temp["name"] = object["objectName"].replace(root_folder_name, "").strip()
         temp["trueName"] = object["objectName"]
         temp["value"] = round(object["size"] / 1024, 2)
+        collection = mc.return_collection("users_access_data")
+        parameter = {"file": object["objectName"]}
+        metadata = mc.find_one(parameter, collection)
+        if (metadata):
+            temp["owner"] = metadata["owner"]
+            for user in metadata["accessing_users"]:
+                if (user["name"] == username):
+                    if "read" in user: temp["read"] = user["read"]
+                    if "write" in user: temp["write"] = user["write"]
+                    if "delete" in user: temp["delete"] = user["delete"]
         return temp
 
     def path_finder(start_position, folder):
@@ -37,6 +48,16 @@ def data_structure_transformer(value):
         temp["name"] = name
         temp["trueName"] = original_name
         temp["children"] = []
+        collection = mc.return_collection("users_access_data")
+        parameter = {"file": temp["trueName"]}
+        metadata = mc.find_one(parameter, collection)
+        if (metadata):
+            temp["owner"] = metadata["owner"]
+            for user in metadata["accessing_users"]:
+                if (user["name"] == username):
+                    if "read" in user: temp["read"] = user["read"]
+                    if "write" in user: temp["write"] = user["write"]
+                    if "delete" in user: temp["delete"] = user["delete"]
         return temp
 
     def longestSubstringFinder(string1, string2):
@@ -102,9 +123,15 @@ def list_buclets():
     return client.list_buckets()
 
 
-def list_objects(bucket_name):
+def list_objects(bucket_name, username):
     pp.pprint(client.list_objects(Bucket=bucket_name))
-    return data_structure_transformer(filter_objects(client.list_objects(Bucket=bucket_name)))
+    if "Contents" not in client.list_objects(Bucket=bucket_name):
+        rjson = {}
+        rjson["name"] = bucket_name
+        rjson["children"] = []
+        return rjson
+    else:
+        return data_structure_transformer(filter_objects(client.list_objects(Bucket=bucket_name)), username)
 
 
 def get_object(bucket, key):
@@ -184,3 +211,48 @@ def roll_back(files):
         files_from_backup.append(backup_file)
     for each_backup_file in files_from_backup:
         upload_object(each_backup_file)
+
+
+def create_replace_record(find_result, accept_result):
+    replace_result = find_result
+    print(find_result["accessing_users"])
+    print(accept_result)
+    temp = find_result["accessing_users"]
+    for v in range(len(temp)):
+        print(temp[v])
+        if temp[v]["name"] == accept_result["username"]:
+            print("inside 2")
+            print(accept_result["access"])
+            print(replace_result["accessing_users"][v])
+            replace_result["accessing_users"][v][accept_result["access"]] = True
+            print("replace_result", replace_result)
+            return replace_result
+
+    file_to_new_append = {"name": accept_result["username"], accept_result["access"]: True}
+    print(file_to_new_append)
+    find_result["accessing_users"].append(file_to_new_append)
+    print(find_result)
+    return find_result
+
+
+def status_change(collection, filter, status):
+    if "status" in filter: del filter["status"]
+    find_result = mc.find_one(filter, collection)
+    find_result["status"] = status
+    return mc.replace(filter, find_result, collection)
+
+
+def file_accesses_others(data):
+    results = []
+    for j in data:
+        temp = {}
+        temp["file"] = j["file"]
+        for i in j["accessing_users"]:
+            temp["name"] = i["name"]
+            temp["access"] = ""
+            if "read" in i: temp["access"] = temp["access"] + "read "
+            if "write" in i: temp["access"] = temp["access"] + "write "
+            if "delete" in i: temp["access"] = temp["access"] + "delete"
+        results.append(temp)
+
+    return (results)
