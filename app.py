@@ -28,9 +28,8 @@ def data_extraction(data):
     # if (extracted_data.split(",")[1].split(":")[0] == "name"):
     #     login_credentials["file_name"] = extracted_data.split(",")[0].split(":")[1]
     print(login_credentials)
-
     return login_credentials
-         
+
 
 @app.route('/register',methods=['POST'])
 def update():
@@ -68,13 +67,14 @@ def find_one():
          print("The data doesn't exists.......")
          return jsonify({"status":False})
 
-@app.route('/validate', methods=['POST'])
+
+@app.route('/validateSession', methods=['GET'])
 def validate_user():
-    credentials = data_extraction(request.data)
-    result = mc.find_one(credentials)
-    print(credentials)
+    username = request.args.get('username')
+    session_id = request.args.get('sessionid')
+    result = mc.find_one({"username": username, "authentication_server_sessionId": session_id})
     if (result) != "":
-         print("The User data is exists .......")
+        print("The User data exists .......")
          return  jsonify({"status":True})
     else:
          print("The data doesn't exists.......")
@@ -85,6 +85,23 @@ def validate_user():
 def send_objects():
     username = request.args.get('username')
     return jsonify(s3.list_objects("file.server.1", username))
+
+
+@app.route('/logout', methods=['GET'])
+def sign_out():
+    username = request.args.get('username')
+    result = mc.find_one({"username": username})
+    del result["_id"]
+    del result["authentication_server_sessionId"]
+    replace_result = mc.replace({"username": username}, result)
+    if replace_result.modified_count == 1:
+        print("The User has been logged out .......")
+        return jsonify({"status": True})
+    else:
+        print("The User has not been logged out.......")
+        return jsonify({"status": False})
+
+
 
 
 @app.route('/getObject', methods=['GET'])
@@ -298,7 +315,6 @@ def request_status():
                 return jsonify({"status": True})
             else:
                 return jsonify({"status": False})
-
     else:
         collection = mc.return_collection("user_access_request")
         replace_result = s3.status_change(collection, object, "rejected")
@@ -327,8 +343,6 @@ def accessed_records():
     result = s3.file_accesses_others(mc.find(filter, access_collection))
     print(result)
     return jsonify(result)
-
-
 
 
 
