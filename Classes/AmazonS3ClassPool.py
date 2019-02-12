@@ -1,9 +1,9 @@
 import configparser
 
-from Classes import AmazonS3Class
+from Classes import AmazonS3Class, CommonPool
 
 
-class AmazonS3ClassPool:
+class AmazonS3ClassPool(CommonPool):
 
     def __init__(self):
         config = configparser.ConfigParser()

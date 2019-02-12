@@ -1,9 +1,9 @@
 import configparser
 
-from Classes import RedisConnectionClass
+from Classes import RedisConnectionClass, CommonPool
 
 
-class RedisConnectionClassPool:
+class RedisConnectionClassPool(CommonPool):
 
     def __init__(self):
         config = configparser.ConfigParser()

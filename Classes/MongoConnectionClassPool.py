@@ -1,9 +1,9 @@
 import configparser
 
-from Classes import MongoConnectionClass
+from Classes import MongoConnectionClass, CommonPool
 
 
-class MongoConnectionClassPool:
+class MongoConnectionClassPool(CommonPool):
 
     def __init__(self):
         config = configparser.ConfigParser()
