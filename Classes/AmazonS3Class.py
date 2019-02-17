@@ -4,7 +4,7 @@ import threading
 
 import boto3
 
-from Classes import MongoConnectionClass, RedisConnectionClass
+from Classes import MongoConnectionClassPool as mc, RedisConnectionClassPool as rc
 
 
 class AmazonS3Class:
@@ -23,8 +23,14 @@ class AmazonS3Class:
         self.client = boto3.client('s3', aws_access_key_id=aws_access_key_id,
                                    aws_secret_access_key=aws_secret_access_key,
                                    region_name=region_name)
-        self.mongo_connection = MongoConnectionClass()
-        self.redis_connection = RedisConnectionClass()
+        self.mongo_connection = mc.MongoConnectionClassPool().acquire()
+        # self.mongo_connection = MongoConnectionClass()
+        # self.redis_connection = RedisConnectionClass()
+        self.redis_connection = rc.RedisConnectionClassPool().acquire()
+
+    def __del__(self):
+        mc.MongoConnectionClassPool().release(self.mongo_connection)
+        rc.RedisConnectionClassPool().release(self.redis_connection)
 
     def data_structure_transformer(self, value, username):
         import pprint as pp
