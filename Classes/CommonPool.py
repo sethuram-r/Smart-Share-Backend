@@ -1,5 +1,4 @@
-class CommonPool:
-
+class CommonPool():
     def acquire(self):
         return self._reusables.pop()
 

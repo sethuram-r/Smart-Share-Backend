@@ -1,15 +1,17 @@
 import configparser
-import pprint as pp
 import threading
 
 import boto3
 
-from Classes import MongoConnectionClassPool as mc, RedisConnectionClassPool as rc
+from Classes import DatabaseFactoryClass
 
 
-class AmazonS3Class:
+class AmazonS3Class():
 
     def __init__(self):
+
+        print("The AmazonS3Class constructor is invoked.......")
+
         config = configparser.ConfigParser()
         config.read('config.ini')
 
@@ -17,20 +19,15 @@ class AmazonS3Class:
         aws_secret_access_key = config['DEFAULT']['AWS_SECRET_ACCESS_KEY']
         region_name = config['DEFAULT']['AWS_REGION_NAME']
         self.bucket_name = config['DEFAULT']['BUCKET_NAME']
-
-        print("aws_access_key_id------------>", aws_access_key_id)
-
         self.client = boto3.client('s3', aws_access_key_id=aws_access_key_id,
                                    aws_secret_access_key=aws_secret_access_key,
                                    region_name=region_name)
-        self.mongo_connection = mc.MongoConnectionClassPool().acquire()
-        # self.mongo_connection = MongoConnectionClass()
-        # self.redis_connection = RedisConnectionClass()
-        self.redis_connection = rc.RedisConnectionClassPool().acquire()
 
-    def __del__(self):
-        mc.MongoConnectionClassPool().release(self.mongo_connection)
-        rc.RedisConnectionClassPool().release(self.redis_connection)
+        data_base = DatabaseFactoryClass.DatabaseFactoryClass(self.mongo_pool, self.redis_pool)
+        self.mongo_connection = data_base.getDatbase("mongo")
+        self.redis_connection = data_base.getDatbase("redis")
+
+
 
     def data_structure_transformer(self, value, username):
         import pprint as pp
@@ -145,7 +142,6 @@ class AmazonS3Class:
         return new_value
 
     def list_objects(self, bucket_name, username):
-        pp.pprint(self.client.list_objects(Bucket=bucket_name))
         if "Contents" not in self.client.list_objects(Bucket=bucket_name):
             rjson = {}
             rjson["name"] = bucket_name
@@ -159,7 +155,6 @@ class AmazonS3Class:
         response = self.client.get_object(Bucket=bucket, Key=key)
         import base64
         base64_encoded_value = base64.standard_b64encode(response["Body"].read())
-
         def worker():
             status = self.redis_connection.insert_object(key, base64_encoded_value)
             print(status)
@@ -183,7 +178,9 @@ class AmazonS3Class:
             file_name = file["name"]
         else:
             file_name = file["path"] + file["name"]
+        print("Uploading.............................")
         result = self.client.put_object(Bucket=self.bucket_name, ACL='public-read', Body=body, Key=file_name)
+        print("Uploading done.......................")
 
         def worker():
             status = self.redis_connection.insert_object(file_name, file["file"])
@@ -231,21 +228,14 @@ class AmazonS3Class:
 
     def create_replace_record(self, find_result, accept_result):
         replace_result = find_result
-        print(find_result["accessing_users"])
-        print(accept_result)
         temp = find_result["accessing_users"]
         for v in range(len(temp)):
-            print(temp[v])
+
             if temp[v]["name"] == accept_result["username"]:
-                print("inside 2")
-                print(accept_result["access"])
-                print(replace_result["accessing_users"][v])
                 replace_result["accessing_users"][v][accept_result["access"]] = True
-                print("replace_result", replace_result)
                 return replace_result
 
         file_to_new_append = {"name": accept_result["username"], accept_result["access"]: True}
-        print(file_to_new_append)
         find_result["accessing_users"].append(file_to_new_append)
         print(find_result)
         return find_result
@@ -256,17 +246,17 @@ class AmazonS3Class:
         find_result["status"] = status
         return self.mongo_connection.replace(filter, find_result, collection)
 
-    def file_accesses_others(self, data):
+    def file_accesses_others(self, data, username):
         results = []
         for j in data:
-            temp = {}
-            temp["file"] = j["file"]
             for i in j["accessing_users"]:
-                temp["name"] = i["name"]
-                temp["access"] = ""
-                if "read" in i: temp["access"] = temp["access"] + "read "
-                if "write" in i: temp["access"] = temp["access"] + "write "
-                if "delete" in i: temp["access"] = temp["access"] + "delete"
-            results.append(temp)
-
+                temp = {}
+                temp["file"] = j["file"]
+                if i["name"] != username:
+                    temp["name"] = i["name"]
+                    temp["access"] = ""
+                    if "read" in i: temp["access"] = temp["access"] + "read "
+                    if "write" in i: temp["access"] = temp["access"] + "write "
+                    if "delete" in i: temp["access"] = temp["access"] + "delete"
+                    results.append(temp)
         return (results)

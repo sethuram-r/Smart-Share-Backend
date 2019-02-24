@@ -7,6 +7,9 @@ import redis
 class RedisConnectionClass:
 
     def __init__(self):
+
+        print("The RedisConnectionClass constructor is invoked.......")
+
         config = configparser.ConfigParser()
         config.read('config.ini')
         host_name = config['REDIS']['HOST']

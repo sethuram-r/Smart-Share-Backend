@@ -1,9 +1,10 @@
 import configparser
 
-from Classes import MongoConnectionClass
+from Classes import MongoConnectionClass, CommonPool
 
 
-class MongoConnectionClassPool():
+class MongoConnectionClassPool(CommonPool.CommonPool):
+
 
     def __init__(self):
         config = configparser.ConfigParser()
@@ -11,8 +12,4 @@ class MongoConnectionClassPool():
         size = int(config['POOL']['MONGO_DB'])
         self._reusables = [MongoConnectionClass.MongoConnectionClass() for _ in range(size)]
 
-    def acquire(self):
-        return self._reusables.pop()
 
-    def release(self, reusable):
-        self._reusables.append(reusable)

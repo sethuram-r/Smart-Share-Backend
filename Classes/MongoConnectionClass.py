@@ -6,6 +6,9 @@ from pymongo import MongoClient
 class MongoConnectionClass:
 
     def __init__(self):
+
+        print("The MongoConnectionClass constructor is invoked.......")
+
         config = configparser.ConfigParser()
         config.read('config.ini')
         mongo_database = config['MONGO']['DATABASE']
@@ -41,7 +44,7 @@ class MongoConnectionClass:
         print(results)
         return results
 
-    def find(filter, collection):
+    def find(self, filter, collection):
         results = []
         for grid_data in collection.find(filter, no_cursor_timeout=True):
             del grid_data['_id']
