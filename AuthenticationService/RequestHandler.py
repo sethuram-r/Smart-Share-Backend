@@ -2,7 +2,7 @@ import json
 
 from flask import Flask, request, jsonify
 
-from AuthenticationService import ServiceInterface
+from AuthenticationService import ServiceInterface, MongoWrites
 
 app = Flask("Authentication Service")
 
@@ -33,3 +33,13 @@ def catch_all(path):
     service = ServiceInterface.ServiceInterface(transformed_request)
     print("result---------------->", service.result)
     return jsonify(service.result)
+
+
+""" call the mongo write here so that it starts consuming when the app is started."""
+
+
+def main():
+    MongoWrites.MongoWrites()
+
+
+main()

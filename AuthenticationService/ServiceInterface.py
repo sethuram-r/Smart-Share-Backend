@@ -1,5 +1,6 @@
 from AuthenticationService import ServiceImplementation
 
+""" This class is an interface that maps the request to corresponding task handlers."""
 
 class ServiceInterface(ServiceImplementation.ServiceImplementation):
     def __init__(self, request):
