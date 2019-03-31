@@ -1,0 +1,7 @@
+config.ini
+CoreService/config.ini
+venv/*
+AuthenticationService/__pycache__/
+Classes/__pycache__/
+__pycache__/
+.idea/*
