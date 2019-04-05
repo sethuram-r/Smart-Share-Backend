@@ -9,7 +9,7 @@ class FileStructureTransformer:
     def __init__(self, username, bucketName, accesssDetailsForFilesAndFolders):
         self.userName = username
         self.bucketName = bucketName
-        self.accesssDetailsForFilesAndFolders = accesssDetailsForFilesAndFolders
+        self.accessDetailsForFilesAndFolders = accesssDetailsForFilesAndFolders
 
     def accessAssignmentToEachFileAndFolder(self, node, metadata):  # untested
         node["owner"] = metadata["owner"]
@@ -22,7 +22,7 @@ class FileStructureTransformer:
 
     def findAccessDetailsForSpecificFileorFolder(self, neededFileOrFolder):
 
-        for eachFileorFolder in self.accesssDetailsForFolders:  # untested
+        for eachFileorFolder in self.accessDetailsForFilesAndFolders:  # untested
             if eachFileorFolder["file"] == neededFileOrFolder:
                 return eachFileorFolder
 
@@ -99,7 +99,7 @@ class FileStructureTransformer:
 
                 for each_split in splitted_root:
                     start_position = self.path_finder(start_position, each_split)
-                    if (start_position["name"]) == self.bucket_name: previous_split = ""
+                    if (start_position["name"]) == self.bucketName: previous_split = ""
                 if file_extension.search(i["objectName"]):
                     start_position["children"].append(self.leaf_assignemnt(i))
                 else:

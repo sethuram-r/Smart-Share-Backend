@@ -1,6 +1,6 @@
 import configparser
 
-from CoreService import FileServerTaskHandlers
+from CoreService.Reads import FileServerReadTaskHandlers
 
 """ This class is the core implementation of Business logic done through various task handlers."""
 
@@ -27,7 +27,7 @@ class ServiceImplementation:
 
         if topicName == None: topicName = self.defaultTopicName
 
-        return FileServerTaskHandlers.FileServerTaskHandlers.getLatestContents(username, topicName)
+        return FileServerReadTaskHandlers.FileServerReadTaskHandlers().getLatestContents(username, topicName)
 
     ## getObject has been renamed to following function name
 
@@ -40,4 +40,4 @@ class ServiceImplementation:
 
         if topicName == None: topicName = self.defaultTopicName
 
-        return FileServerTaskHandlers.FileServerTaskHandlers.getFileOrFolder(selectedFileOrFolder, topicName)
+        return FileServerReadTaskHandlers.FileServerReadTaskHandlers().getFileOrFolder(selectedFileOrFolder, topicName)

@@ -2,10 +2,10 @@ import json
 
 from flask import Flask, request, jsonify
 
-from CoreService import ServiceInterface
+from CoreService.Reads import ServiceInterface
 from CoreService.Redis import RedisConsumer
 
-app = Flask("Core Service")
+app = Flask("Core Service Reads")
 
 
 def request_preparation(request, path):
