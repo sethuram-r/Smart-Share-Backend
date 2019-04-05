@@ -1,4 +1,4 @@
-from AuthenticationService import ServiceImplementation
+from CoreService import ServiceImplementation
 
 """ This class is an interface that maps the request to corresponding task handlers."""
 

@@ -2,7 +2,8 @@ import json
 
 from flask import Flask, request, jsonify
 
-from AuthenticationService import ServiceInterface
+from CoreService import ServiceInterface
+from CoreService.Redis import RedisConsumer
 
 app = Flask("Core Service")
 
@@ -33,3 +34,13 @@ def catch_all(path):
     service = ServiceInterface.ServiceInterface(transformed_request)
     print("result---------------->", service.result)
     return jsonify(service.result)
+
+
+""" call the mongo write here so that it starts consuming when the app is started."""
+
+
+def main():
+    RedisConsumer.RedisConsumer()
+
+
+main()

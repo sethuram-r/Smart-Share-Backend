@@ -13,6 +13,7 @@ class ServiceImplementation:
         self.username = config['HELPERS']['USER_NAME']
         self.topicName = config['HELPERS']['TOPIC_NAME']
         self.defaultTopicName = config['HELPERS']['DEFAULT_TOPIC_NAME']
+        self.selectedFileOrFolder = config['HELPERS']['SELECTED_FILE_OR_FOLDER']
         self.request = request
 
     ## getObjects has been renamed to following function name
@@ -27,3 +28,16 @@ class ServiceImplementation:
         if topicName == None: topicName = self.defaultTopicName
 
         return FileServerTaskHandlers.FileServerTaskHandlers.getLatestContents(username, topicName)
+
+    ## getObject has been renamed to following function name
+
+    def downloadSelectedFileOrFolders(self):
+
+        """ This function is used to forward the request to the file server handler for downloading the selected file or folder """
+
+        selectedFileOrFolder = self.request["param"].get(self.selectedFileOrFolder)
+        topicName = self.request["param"].get(self.topicName)
+
+        if topicName == None: topicName = self.defaultTopicName
+
+        return FileServerTaskHandlers.FileServerTaskHandlers.getFileOrFolder(selectedFileOrFolder, topicName)

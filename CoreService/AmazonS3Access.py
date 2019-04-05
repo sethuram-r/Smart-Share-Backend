@@ -1,5 +1,6 @@
-import boto3
 import configparser
+
+import boto3
 
 """This class is used to access the Amazon S3 Cloud. """
 
@@ -18,3 +19,6 @@ class AmazonS3Access:
 
     def listObjects(self, bucketName):
         return self.__client.list_objects(Bucket=bucketName)
+
+    def getObject(self, bucket, key):
+        return self.__client.get_object(Bucket=bucket, Key=key)
