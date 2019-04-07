@@ -12,7 +12,6 @@ class FileServerReadTaskHandlers:
     def __init__(self):
         config = configparser.ConfigParser()
         config.read('config.ini')
-        self._s3 = config['DATA_SOURCE']['AMAZON_S3']  # Doubt whether private variable can be passed or not
         self._CacheRole = config['HELPERS']['REDIS_CACHE']
 
     def getLatestContents(self, username, bucketName):
@@ -33,7 +32,7 @@ class FileServerReadTaskHandlers:
 
         # topic name level scope is not implemented yet
 
-        redisConnection = DataSourceFactory.DataSourceFactory.getS3Access(self._CacheRole)
+        redisConnection = DataSourceFactory.DataSourceFactory().getRedisAccess(self._CacheRole)
 
         # Key preparation Begins..
 

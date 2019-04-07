@@ -33,3 +33,6 @@ class RedisLock:
             return self.insertLock
         else:
             return self.releaseLock
+
+    def exists(self, key):
+        return self._redisClient.exists(key)

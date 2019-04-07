@@ -19,7 +19,7 @@ class RedisConsumer:
 
         """ Function to insert the user registration details into DB """
 
-        redisConnection = DataSourceFactory.DataSourceFactory.getRedisAccess(role=self._redisRole)
+        redisConnection = DataSourceFactory.DataSourceFactory().getRedisAccess(role=self._redisRole)
 
         # Key preparation for Redis begins....
 

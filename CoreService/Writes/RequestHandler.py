@@ -2,9 +2,9 @@ import json
 
 from flask import Flask, request, jsonify
 
-from CoreService.Reads import ServiceInterface
+from CoreService.Writes import ServiceInterface
 
-app = Flask("Core Service Reads")
+app = Flask("Core Service Writes")
 
 
 def request_preparation(request, path):
@@ -33,16 +33,3 @@ def catch_all(path):
     service = ServiceInterface.ServiceInterface(transformed_request)
     print("result---------------->", service.result)
     return jsonify(service.result)
-
-# added separate cache server that consumes
-
-
-#
-# """ call the redis consumer here so that it starts consuming when the app is started."""
-#
-#
-# def main():
-#     RedisConsumer.RedisConsumer()
-#
-#
-# main()
