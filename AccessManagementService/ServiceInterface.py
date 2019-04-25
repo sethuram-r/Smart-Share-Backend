@@ -1,11 +1,11 @@
-from AccessManagementService import ServiceImplementation
+from AccessManagementService import ServiceImplementation, ApiImplementation
 
 """ This class is an interface that maps the request to corresponding task handlers."""
 
 
-class ServiceInterface(ServiceImplementation.ServiceImplementation):
+class ServiceInterface(ServiceImplementation.ServiceImplementation, ApiImplementation.ApiImplmentation):
     def __init__(self, request, modelInstance, databaseInstance):
-        ServiceImplementation.ServiceImplementation.__init__(self, request, modelInstance, databaseInstance)
+        super().__init__(self, request, modelInstance, databaseInstance)
         self.result = self.initiate()
 
     def initiate(self):

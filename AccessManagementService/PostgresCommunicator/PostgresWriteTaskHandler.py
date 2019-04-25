@@ -1,5 +1,5 @@
 from AccessManagementService.PostgresCommunicator.Models import ModelFactory
-from AccessManagementService.PostgresCommunicator.RequestToObjectMappers import AccessRequestToItsObjectMapper
+from AccessManagementService.PostgresCommunicator.RequestToObjectMappers import RequestToDatabaseObjectMapper
 
 
 class PostgresWriteTaskHandler:
@@ -12,7 +12,7 @@ class PostgresWriteTaskHandler:
 
         accessRequestObject = ModelFactory.ModelFactory(self.modelInstance,
                                                         self.databseInstance).getAccessRequestObject()
-        requestMappedAccessRequestObject = AccessRequestToItsObjectMapper.AccessRequestToItsObjectMapper().RequestMappedAccessRequestObject(
+        requestMappedAccessRequestObject = RequestToDatabaseObjectMapper.RequestToDatabaseObjectMapper().RequestMappedAccessRequestObject(
             accessRequestObject, accessRequest)
         self.databseInstance.session.add(requestMappedAccessRequestObject)
         commitedId = self.databseInstance.session.commit()  # this returns id if the transaction is commited
@@ -55,11 +55,38 @@ class PostgresWriteTaskHandler:
     def deleteAccessRequestRecord(self, accessRequestToBeDeleted):
         accessRequestObject = ModelFactory.ModelFactory(self.modelInstance,
                                                         self.databseInstance).getAccessRequestObject()
-        requestMappedAccessRequestObject = AccessRequestToItsObjectMapper.AccessRequestToItsObjectMapper().RequestMappedAccessRequestObjectForDelete(
+        requestMappedAccessRequestObject = RequestToDatabaseObjectMapper.RequestToDatabaseObjectMapper().RequestMappedAccessRequestObjectForDelete(
             accessRequestObject,
             accessRequestToBeDeleted)  ### have to check whether its needed or not if not the request can be diretly sennt to db
         self.databseInstance.session.delete(requestMappedAccessRequestObject)
         commitedId = self.databseInstance.session.commit()  # this returns id if the transaction is commited
+        if commitedId != None:  # this returns id if the transaction is commited -- doubt of committed id value
+            return ({"status": True})
+        else:
+            return ({"status": False})
+
+    def deleteAccessDetailForFiles(self, FilesForCorrespondingAccessRecordsToBeDeleted):
+        resultOfDeleteOperation = []
+        for eachFile in FilesForCorrespondingAccessRecordsToBeDeleted:
+            fileObject = ModelFactory.ModelFactory(self.modelInstance,
+                                                   self.databseInstance).getAccessDetailOfFile(eachFile)
+            self.databseInstance.session.delete(fileObject)
+            resultOfDeleteOperation.append(self.databseInstance.session.commit())
+        if None not in resultOfDeleteOperation:
+            return ({"status": True})
+        else:
+            return ({"status": False})
+
+    def createUserAccessDetailForFile(self, accessDetailsToBeInserted):
+
+        numberOfAccessingUsers = len(accessDetailsToBeInserted["accessing_users"])
+        newFileObject = ModelFactory.ModelFactory(self.modelInstance,
+                                                  self.databseInstance).getFileAndItsAccessingUsersObjectForNonExistingFile(
+            numberOfAccessingUsers)
+        mappedNewFileObject = RequestToDatabaseObjectMapper.RequestToDatabaseObjectMapper().userAccessDetailToCorrespondingObect(
+            newFileObject, accessDetailsToBeInserted)
+        self.databseInstance.session.add(mappedNewFileObject)
+        commitedId = self.databseInstance.session.commit()
         if commitedId != None:  # this returns id if the transaction is commited -- doubt of committed id value
             return ({"status": True})
         else:

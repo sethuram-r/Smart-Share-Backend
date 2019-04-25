@@ -14,4 +14,4 @@ class DataSourceFactory:
     def getRedisAccess(self, role):
         """ This function gives the access to redis """
 
-        return RedisAccess.RedisAccess(role)
+        return RedisAccess.RedisAccess().getRedisAccess(role)

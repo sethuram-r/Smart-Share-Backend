@@ -37,7 +37,6 @@ def catch_all(path):
 
 """ call the mongo write here so that it starts consuming when the app is started."""
 
-
 def main():
     MongoWrites.MongoWrites()
 

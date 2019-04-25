@@ -2,7 +2,7 @@ import configparser
 import re
 
 from CoreService import DataSourceFactory
-from CoreService.Writes import FileMetaDataApi
+from CoreService.Writes import FileMetaDataApi, OtherApiCallsForDifferentServers
 
 """ This class is used to handle tasks corresponding to Transactions"""
 
@@ -13,21 +13,23 @@ class SavepointHandler:
         config = configparser.ConfigParser()
         config.read('config.ini')
         self._fileMetaDataApi = FileMetaDataApi.FileMetaDataApi()
+        self._otherApiCallsForDifferentServers = OtherApiCallsForDifferentServers.OtherApiCallsForDifferentServers()
         self._fileExtension = re.compile("([a-zA-Z0-9\s_\\.\-\(\):])+(\..*)$")
         self._transactionRole = config['HELPERS']['REDIS_TRANSACTION']
         self._redisConnection = DataSourceFactory.DataSourceFactory().getRedisAccess(self._transactionRole)
 
-    def __createSavepointDataFromS3ForEachFile(self, selectedFile):
+    def __createSavepointDataFromS3ForEachFile(self, topicName, owner, selectedFile):
         file = {}
         file["key"] = selectedFile
         file["data"] = {}
         if self._fileExtension.search(selectedFile):
-            file["data"]["content"] = self._fileMetaDataApi.getContentForSelectedFile(selectedFile)
+            file["data"]["content"] = self._otherApiCallsForDifferentServers.getContentForSelectedFile(topicName,
+                                                                                                       selectedFile)
         else:
             file["data"]["content"] = None
         return file
 
-    def createSavepointForUploadOperation(self, selectedFiles):
+    def createSavepointForUploadOperation(self, topicName, owner, selectedFiles):
 
         insertionResults = []
         for selectedFile in selectedFiles:
@@ -35,7 +37,7 @@ class SavepointHandler:
 
             # Step -1 :  Gather User  file content for corresponding file through rest call
 
-            file = self.__createSavepointDataFromS3ForEachFile(selectedFile)
+            file = self.__createSavepointDataFromS3ForEachFile(topicName, owner, selectedFile)
 
             # Savepoint insertion begins...
 
@@ -54,8 +56,9 @@ class SavepointHandler:
 
             # Step -1 :  Gather User access data and file content for corresponding file through rest call
 
-            file = self.__createSavepointDataFromS3ForEachFile(selectedFile["key"])
-            file["data"]["access"] = self._fileMetaDataApi.fetchUserAcessDataForFile(owner, selectedFile["key"])
+            file = self.__createSavepointDataFromS3ForEachFile(owner, selectedFile["key"])
+            file["data"]["access"] = self._fileMetaDataApi.fetchUserAcessDataForSingleFileFromAccessManagementServer(
+                owner, selectedFile["key"])
 
             # Step - 2 Insert the file details to Transaction Database
 
@@ -75,17 +78,21 @@ class SavepointHandler:
 
         return deletionResult
 
-    def rollbackForUploadOperation(self, filesPresentInTheSavepoint):
+    def rollbackForUploadOperation(self, topicName, filesPresentInTheSavepoint):
 
         for eachFilesPresentInTheSavepoint in filesPresentInTheSavepoint:
             eachBackupFileWithData = self._redisConnection.getDataForTheFile(eachFilesPresentInTheSavepoint,
                                                                              mapping='data')
-            uploadResult = self._fileMetaDataApi.writeOrUpdateS3Data(eachBackupFileWithData["data"]["content"])
+            uploadResult = self._otherApiCallsForDifferentServers.writeOrUpdateSavepointInS3(topicName,
+                                                                                             eachBackupFileWithData[
+                                                                                                 "key"],
+                                                                                             eachBackupFileWithData[
+                                                                                                 "data"]["content"])
             if uploadResult == False:
                 print("{}------{}----{}".format('Warning', eachBackupFileWithData,
                                                 'Error in Rollback for Upload Operation'))  # logger implementation
 
-    def rollBackforDeleteOperation(self, selectedFiles):
+    def rollBackforDeleteOperation(self, topicName, selectedFiles):
 
         getAllBackupFilesForSelectedFolder = self._redisConnection.getKeysWithPattern(
             pattern="backup:" + selectedFiles[0]["Key"] + "*")
@@ -98,12 +105,15 @@ class SavepointHandler:
 
             # step-1 put the access data back
 
-            insertOrUpdateResult = self._fileMetaDataApi.writeOrUpdateUserAccessData(
-                eachBackupFileWithData["data"]["access"])
+            insertOrUpdateResult = self._fileMetaDataApi.writeOrUpdateUserAccessData(eachBackupFileWithData)
 
             # step-2 put the S3 data back
 
-            uploadResult = self._fileMetaDataApi.writeOrUpdateS3Data(eachBackupFileWithData["data"]["content"])
+            uploadResult = self._otherApiCallsForDifferentServers.writeOrUpdateSavepointInS3(topicName,
+                                                                                             eachBackupFileWithData[
+                                                                                                 "key"],
+                                                                                             eachBackupFileWithData[
+                                                                                                 "data"]["content"])
 
             if insertOrUpdateResult and uploadResult == False:  # Doubt Condition
                 print("{}------{}----{}".format('Warning', eachBackupFile,

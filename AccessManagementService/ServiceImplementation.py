@@ -11,6 +11,7 @@ from AccessManagementService.PostgresCommunicator import PostgresWriteTaskHandle
 class ServiceImplementation:
 
     def __init__(self, request, modelInstance, databaseInstance):
+        super().__init__(self, request, modelInstance, databaseInstance)
         config = configparser.ConfigParser()
         config.read('config.ini')
         self.request = request

@@ -7,16 +7,24 @@ from CoreService.Redis import RedisCache, RedisTransaction, RedisLock
 
 class RedisAccess:
 
-    def __init__(self, role):
+    def __init__(self):
 
         config = configparser.ConfigParser()
         config.read('config.ini')
+        self.__redisCache = config['HELPERS']['REDIS_CACHE']
+        self.__redisLock = config['HELPERS']['REDIS_LOCK']
+        self.__redisTransaction = config['HELPERS']['REDIS_TRANSACTION']
 
-        if role == config['HELPERS']['REDIS_CACHE']: return RedisCache.RedisCache()
+    def getRedisAccess(self, role):
 
-        if role == config['HELPERS']['REDIS_LOCK']: return RedisLock.RedisLock()
+        if role == self.__redisCache: return RedisCache.RedisCache()
 
-        if role == config['HELPERS']['REDIS_TRANSACTION']: return RedisTransaction.RedisTransaction()
+        if role == self.__redisLock: return RedisLock.RedisLock()
+
+        if role == self.__redisTransaction: return RedisTransaction.RedisTransaction()
+
+
+
 
 # Have to check where it is used....
 

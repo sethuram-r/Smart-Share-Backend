@@ -51,7 +51,8 @@ class FileServerWriteTaskHandlers:
 
                 try:
                     rollBackThread = threading.Thread(
-                        target=SavepointHandler.SavepointHandler().rollBackforDeleteOperation, args=(selectedFiles,))
+                        target=SavepointHandler.SavepointHandler().rollBackforDeleteOperation,
+                        args=(topicName, selectedFiles,))
                     rollBackThread.daemon = True
                     rollBackThread.start()
                 except:
@@ -107,7 +108,8 @@ class FileServerWriteTaskHandlers:
 
         # Savepoint Creation Begins
 
-        savepointCreated = SavepointHandler.SavepointHandler().createSavepointForUploadOperation(filesToCreateSavepoint)
+        savepointCreated = SavepointHandler.SavepointHandler().createSavepointForUploadOperation(topicName, owner,
+                                                                                                 filesToCreateSavepoint)
 
         if savepointCreated:
 
@@ -119,7 +121,7 @@ class FileServerWriteTaskHandlers:
             if False not in versionIds:
                 accessRecordsToBeInserted = [self.__createAccessRecord(owner, eachFileToBeUploaded) for
                                              eachFileToBeUploaded in filesToBeUploaded]
-                accessRecordsInsertionResults = FileMetaDataApi.FileMetaDataApi().addUserAccessDetailsForFileorFolder(
+                accessRecordsInsertionResults = FileMetaDataApi.FileMetaDataApi().addUserAccessDetailsForFileorFolderInUserAccessManagementServer(
                     accessRecordsToBeInserted)
 
                 if accessRecordsInsertionResults:
@@ -140,7 +142,7 @@ class FileServerWriteTaskHandlers:
                 try:
                     rollBackThread = threading.Thread(
                         target=SavepointHandler.SavepointHandler().rollbackForUploadOperation,
-                        args=(owner, filesToCreateSavepoint,))
+                        args=(topicName, filesToCreateSavepoint,))
                     rollBackThread.daemon = True
                     rollBackThread.start()
                 except:
