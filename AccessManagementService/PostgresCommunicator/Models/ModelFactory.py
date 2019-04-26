@@ -64,15 +64,16 @@ class ModelFactory:
 
         return (Owner(), File(), FileUserAccess(), PermissionsAssigned(), User())
 
-    def getFileAndItsAccessingUsersObjectForNonExistingFile(self):
+    def getFileAndItsAccessingUsersObject(self, numberOfAccessingUsers):
 
         OwnerObject, FileObject, FileUserAccessObject, PermissionsAssignedObject, UserObject = self.getFileAndItsAccessingUsersModel()
         file = FileObject
         file.owner = OwnerObject
-        fileUserAccessAssociationObject = FileUserAccessObject
-        fileUserAccessAssociationObject.accessId = PermissionsAssignedObject
-        fileUserAccessAssociationObject.user = UserObject
-        file.users.append(fileUserAccessAssociationObject)
+        for fileUserAccessAssociationObject in range(numberOfAccessingUsers):
+            fileUserAccessAssociationObject = FileUserAccessObject
+            fileUserAccessAssociationObject.accessId = PermissionsAssignedObject
+            fileUserAccessAssociationObject.user = UserObject
+            file.users.append(fileUserAccessAssociationObject)
 
         ### Object implemenatation Example
 
@@ -86,6 +87,9 @@ class ModelFactory:
         # db.session.commit()
 
         return file
+
+    def getFileAndItsAccessingUsersObjectForNonExistingFile(self, numberOfAccessingUsers=1):
+        return self.getFileAndItsAccessingUsersObject(numberOfAccessingUsers)
 
     def accessDetailsFormatter(self, access):
         accessRecord = {}
@@ -147,3 +151,15 @@ class ModelFactory:
         OwnerObject, FileObject, FileUserAccessObject, PermissionsAssignedObject, UserObject = self.getFileAndItsAccessingUsersModel()
         ownerDetails = OwnerObject.query.filter_by(name=ownerName).first()
         return FileObject.query.filter_by(ownerId=ownerDetails.id).all()
+
+    def getOwnerDetails(self, ownerId):
+        OwnerObject, FileObject, FileUserAccessObject, PermissionsAssignedObject, UserObject = self.getFileAndItsAccessingUsersModel()
+        return OwnerObject.query.filter_by(ownerId=ownerId).first()
+
+    def listAllFileAccessDetails(self):
+        OwnerObject, FileObject, FileUserAccessObject, PermissionsAssignedObject, UserObject = self.getFileAndItsAccessingUsersModel()
+        return FileObject.query.all()
+
+    def getAccessDetailOfFile(self, fileName):
+        OwnerObject, FileObject, FileUserAccessObject, PermissionsAssignedObject, UserObject = self.getFileAndItsAccessingUsersModel()
+        return FileObject.query.filter_by(name=fileName)

@@ -16,7 +16,17 @@ database = SQLAlchemy(app)
 database.metadata.schema = config['POSTGRES']['SCHEMA']
 
 createAccessRequestKey = config['TASKS']['CREATE_ACCESS_REQUEST']
+deleteAccessRequestKey = config['TASKS']['DELETE_ACCESS_REQUEST']
+approveOrRejectAccessRequest = config['TASKS']['APPROVE_REJECT_ACCESS_REQUEST']
 
+
+def FileOwnerApproveOrRejectAccessRequest(accessRequestToBeApprovedOrRejected):
+    if accessRequestToBeApprovedOrRejected["status"] == "approve":
+        PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).approveAccessRequest(
+            accessRequestToBeApprovedOrRejected)
+    else:
+        PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).rejectAccessRequest(
+            accessRequestToBeApprovedOrRejected)
 
 def consumer():
     consumer = KafkaConsumer(
@@ -35,6 +45,19 @@ def consumer():
 
         if requests_or_records.key == createAccessRequestKey: PostgresWriteTaskHandler.PostgresWriteTaskHandler(
             database.Model, database).createAccessRequest(requests_or_records.value)
+
+        if requests_or_records.key == deleteAccessRequestKey: PostgresWriteTaskHandler.PostgresWriteTaskHandler(
+            database.Model, database).createAccessRequest(requests_or_records.value)
+        PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).deleteAccessRequestRecord(
+            requests_or_records.value)
+
+        if requests_or_records.key == approveOrRejectAccessRequest: FileOwnerApproveOrRejectAccessRequest(
+            requests_or_records.value)
+
+
+
+
+
 
 
 consumer()

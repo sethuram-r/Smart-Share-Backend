@@ -33,10 +33,7 @@ class PostgresWriteTaskHandler:
                 accessRequestToBeApproved)
             self.databseInstance.session.add(fileUserAccessObjectForGivenFileAndOwner)
             commitedId = self.databseInstance.session.commit()  # this returns id if the transaction is commited
-            if commitedId != None:  # this returns id if the transaction is commited -- doubt of committed id value
-                return ({"status": True})
-            else:
-                return ({"status": False})
+            if commitedId == None: print('Warning approveAccessRequest Error in Insertion')  # logger implementation
 
     def rejectAccessRequest(self, accessRequestToBeRejected):
         accessRequestObject = ModelFactory.ModelFactory(self.modelInstance,
@@ -47,10 +44,7 @@ class PostgresWriteTaskHandler:
         accessRequestForWhichStatusHasToBeRejected.statusOfRequest = "rejected"
         self.databseInstance.session.add(accessRequestForWhichStatusHasToBeRejected)
         commitedId = self.databseInstance.session.commit()
-        if commitedId != None:  # this returns id if the transaction is commited -- doubt of committed id value
-            return ({"status": True})
-        else:
-            return ({"status": False})
+        if commitedId == None: print('Warning rejectAccessRequest Error in Insertion')  # logger implementation
 
     def deleteAccessRequestRecord(self, accessRequestToBeDeleted):
         accessRequestObject = ModelFactory.ModelFactory(self.modelInstance,
@@ -60,10 +54,7 @@ class PostgresWriteTaskHandler:
             accessRequestToBeDeleted)  ### have to check whether its needed or not if not the request can be diretly sennt to db
         self.databseInstance.session.delete(requestMappedAccessRequestObject)
         commitedId = self.databseInstance.session.commit()  # this returns id if the transaction is commited
-        if commitedId != None:  # this returns id if the transaction is commited -- doubt of committed id value
-            return ({"status": True})
-        else:
-            return ({"status": False})
+        if commitedId == None: print('Warning deleteAccessRequest Error in Deletion')
 
     def deleteAccessDetailForFiles(self, FilesForCorrespondingAccessRecordsToBeDeleted):
         resultOfDeleteOperation = []
