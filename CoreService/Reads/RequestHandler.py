@@ -32,17 +32,6 @@ def catch_all(path):
     print("transformed_request-------------->", transformed_request)
     service = ServiceInterface.ServiceInterface(transformed_request)
     print("result---------------->", service.result)
+    if type(service.result) == bytes: return service.result
     return jsonify(service.result)
 
-# added separate cache server that consumes
-
-
-#
-# """ call the redis consumer here so that it starts consuming when the app is started."""
-#
-#
-# def main():
-#     RedisConsumer.RedisConsumer()
-#
-#
-# main()

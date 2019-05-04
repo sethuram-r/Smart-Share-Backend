@@ -9,7 +9,7 @@ class ServiceImplementation:
 
     def __init__(self, request):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('CoreConfig.ini')
         self.username = config['HELPERS']['USER_NAME']
         self.topicName = config['HELPERS']['TOPIC_NAME']
         self.defaultTopicName = config['HELPERS']['DEFAULT_TOPIC_NAME']

@@ -10,7 +10,7 @@ from AccessManagementService.PostgresCommunicator import PostgresWriteTaskHandle
 app = Flask('Postgres Consumer')
 
 config = configparser.ConfigParser()
-
+config.read('AccessManagementConfig.ini')
 app.config['SQLALCHEMY_DATABASE_URI'] = config['POSTGRES']['SQLALCHEMY_DATABASE_URI']
 database = SQLAlchemy(app)
 database.metadata.schema = config['POSTGRES']['SCHEMA']
@@ -28,6 +28,14 @@ def FileOwnerApproveOrRejectAccessRequest(accessRequestToBeApprovedOrRejected):
         PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).rejectAccessRequest(
             accessRequestToBeApprovedOrRejected)
 
+
+def keyDeserializer(key):
+    return key.decode('utf-8')
+
+
+def valueDeserializer(value):
+    return loads(value.decode('utf-8'))
+
 def consumer():
     consumer = KafkaConsumer(
         'access_management',
@@ -43,21 +51,16 @@ def consumer():
         """ Based on the key the events are filtered and processed.
          This would have been done by forming a new stream through stream processing using faust"""
 
-        if requests_or_records.key == createAccessRequestKey: PostgresWriteTaskHandler.PostgresWriteTaskHandler(
-            database.Model, database).createAccessRequest(requests_or_records.value)
+        if keyDeserializer(requests_or_records.key) == createAccessRequestKey:
+            PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).createAccessRequest(
+                valueDeserializer(requests_or_records.value))
 
-        if requests_or_records.key == deleteAccessRequestKey: PostgresWriteTaskHandler.PostgresWriteTaskHandler(
-            database.Model, database).createAccessRequest(requests_or_records.value)
-        PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).deleteAccessRequestRecord(
-            requests_or_records.value)
+        if keyDeserializer(requests_or_records.key) == deleteAccessRequestKey:
+            PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).deleteAccessRequestRecord(
+                valueDeserializer(requests_or_records.value))
 
-        if requests_or_records.key == approveOrRejectAccessRequest: FileOwnerApproveOrRejectAccessRequest(
-            requests_or_records.value)
-
-
-
-
-
+        if keyDeserializer(requests_or_records.key) == approveOrRejectAccessRequest:
+            FileOwnerApproveOrRejectAccessRequest(valueDeserializer(requests_or_records.value))
 
 
 consumer()

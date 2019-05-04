@@ -10,7 +10,7 @@ class MongoWrites:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('AuthenticationConfig.ini')
         self.sign_up = config['TASKS']['SIGN_UP']
         self.sign_in = config['TASKS']['SIGN_IN']
         self.log_out = config['TASKS']['LOG_OUT']
@@ -73,3 +73,6 @@ class MongoWrites:
             if requests_or_records.key == self.sign_up: self.signUp(requests_or_records.value)
             if requests_or_records.key == self.sign_in: self.signIn(requests_or_records.value)
             if requests_or_records.key == self.log_out: self.logOut(requests_or_records.value)
+
+
+MongoWrites()

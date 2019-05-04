@@ -5,7 +5,7 @@ from AccessManagementService import ServiceImplementation, ApiImplementation
 
 class ServiceInterface(ServiceImplementation.ServiceImplementation, ApiImplementation.ApiImplmentation):
     def __init__(self, request, modelInstance, databaseInstance):
-        super().__init__(self, request, modelInstance, databaseInstance)
+        super().__init__(request, modelInstance, databaseInstance)
         self.result = self.initiate()
 
     def initiate(self):

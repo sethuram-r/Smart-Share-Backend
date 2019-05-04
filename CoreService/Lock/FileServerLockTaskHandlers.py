@@ -9,7 +9,7 @@ class FileServerLockTaskHandlers:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('CoreConfig.ini')
         self._LockRole = config['HELPERS']['REDIS_LOCK']
         self._redisConnection = DataSourceFactory.DataSourceFactory().getRedisAccess(self._LockRole)
 

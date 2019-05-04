@@ -10,10 +10,15 @@ class RedisAccess:
     def __init__(self):
 
         config = configparser.ConfigParser()
-        config.read('config.ini')
-        self.__redisCache = config['HELPERS']['REDIS_CACHE']
-        self.__redisLock = config['HELPERS']['REDIS_LOCK']
-        self.__redisTransaction = config['HELPERS']['REDIS_TRANSACTION']
+        config.read('CoreConfig.ini')
+        # self.__redisCache = config['HELPERS']['REDIS_CACHE']
+        # self.__redisLock = config['HELPERS']['REDIS_LOCK']
+        # self.__redisTransaction = config['HELPERS']['REDIS_TRANSACTION']
+
+        self.__redisCache = "cache"
+        self.__redisLock = "lock"
+        self.__redisTransaction = "transaction"
+
 
     def getRedisAccess(self, role):
 
@@ -34,3 +39,5 @@ class RedisAccess:
 #
 # def get_keys(self, pattern):
 #     return self.redis_client.keys(pattern)
+
+RedisAccess()

@@ -1,3 +1,4 @@
+import base64
 import configparser
 import threading
 
@@ -11,8 +12,10 @@ class FileServerReadTaskHandlers:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('CoreConfig.ini')
         self._CacheRole = config['HELPERS']['REDIS_CACHE']
+        self._insertCacheTask = config['TASKS']['INSERT_CACHE']
+
 
     def getLatestContents(self, username, bucketName):
 
@@ -28,6 +31,11 @@ class FileServerReadTaskHandlers:
 
         return hierarchicalStructureForS3result
 
+    def pushTheDownloadedFileToCache(self, s3Data, selectedFileOrFolder, topicName):
+        ThreadServices.ThreadServices().pushToCacheStream(s3Data, selectedFileOrFolder, topicName)
+
+
+
     def getFileOrFolder(self, selectedFileOrFolder, topicName):
 
         # topic name level scope is not implemented yet
@@ -38,6 +46,8 @@ class FileServerReadTaskHandlers:
 
         keyToBeSearched = "cache:" + topicName + '/' + selectedFileOrFolder
 
+        print("keyToBeSearched----->", keyToBeSearched)
+
         # Key preparation Ends..
 
         if redisConnection.exists(keyToBeSearched) == 1:
@@ -47,13 +57,15 @@ class FileServerReadTaskHandlers:
         else:
             s3Connection = DataSourceFactory.DataSourceFactory().getS3Access()
             dataFromS3 = s3Connection.getObject(topicName, selectedFileOrFolder)
-            if dataFromS3 is not None:  # Condition has to be checked
+            dataFromS3InBase64EncodedFromat = base64.standard_b64encode(dataFromS3["Body"].read())
+            if dataFromS3InBase64EncodedFromat is not None:  # Condition has to be checked
                 try:
-                    thread = threading.Thread(target=ThreadServices.ThreadServices().pushToCacheStream,
-                                              args=(dataFromS3, selectedFileOrFolder, topicName,))
+
+                    thread = threading.Thread(target=self.pushTheDownloadedFileToCache,
+                                              args=(dataFromS3InBase64EncodedFromat, selectedFileOrFolder, topicName,))
                     thread.daemon = True
                     thread.start()
                 except:
                     print("Error: unable to push into Cache Stream")
             print("returned from s3")
-            return dataFromS3
+            return dataFromS3InBase64EncodedFromat

@@ -1,8 +1,13 @@
+from AccessManagementService.PostgresCommunicator.Models import ObjectRelationalModel
+
+
 class ModelFactory:
 
     def __init__(self, model, db):
         self.model = model
         self.db = db
+        # super().__init__()
+        self.objectRelationalModel = ObjectRelationalModel.ObjectRelationalModel()
 
     def getAccessRequestObject(self):
         class AccessRequest(self.model):
@@ -29,47 +34,17 @@ class ModelFactory:
 
     def getFileAndItsAccessingUsersModel(self):
 
-        class Owner(self.model):
-            id = self.db.Column(self.db.Integer, primary_key=True)
-            name = self.db.Column(self.db.Text)
-            files = self.db.relationship('File', backref='owner', lazy=True)
-
-        class File(self.model):
-            id = self.db.Column(self.db.Integer, primary_key=True)
-            name = self.db.Column(self.db.Text)
-            ownerId = self.db.Column(self.db.Integer, self.db.ForeignKey('owner.id'))
-            owner = self.db.relationship("Owner")  ### added apart from tested sample
-            users = self.db.relationship("FileUserAccess", backref="file")
-
-        class FileUserAccess(self.model):
-            fileId = self.db.Column(self.db.Integer, self.db.ForeignKey('file.id'), primary_key=True)
-            userId = self.db.Column(self.db.Integer, self.db.ForeignKey('user.id'), primary_key=True)
-            accessId = self.db.Column(self.db.Integer, self.db.ForeignKey('permissions_assigned.id'))
-            accessGiven = self.db.relationship('PermissionsAssigned')
-
-        class User(self.model):
-            id = self.db.Column(self.db.Integer, primary_key=True)
-            name = self.db.Column(self.db.Text)
-            files = self.db.relationship("FileUserAccess", backref="user")
-
-        class PermissionsAssigned(self.model):
-            id = self.db.Column(self.db.Integer, primary_key=True)
-            read = self.db.Column(self.db.Boolean)
-            write = self.db.Column(self.db.Boolean)
-            delete = self.db.Column(self.db.Boolean)
-
-            def __repr__(self):
-                return '<PermissionsAssigned %r %r %r>' % (
-                    self.read, self.write, self.delete)
-
-        return (Owner(), File(), FileUserAccess(), PermissionsAssigned(), User())
+        modelObjects = (self.objectRelationalModel.Owner(),
+                        self.objectRelationalModel.File(), self.objectRelationalModel.FileUserAccess(),
+                        self.objectRelationalModel.PermissionsAssigned(), self.objectRelationalModel.User())
+        return modelObjects
 
     def getFileAndItsAccessingUsersObject(self, numberOfAccessingUsers):
 
         OwnerObject, FileObject, FileUserAccessObject, PermissionsAssignedObject, UserObject = self.getFileAndItsAccessingUsersModel()
         file = FileObject
         file.owner = OwnerObject
-        for fileUserAccessAssociationObject in range(numberOfAccessingUsers):
+        for eachAccessingUser in range(numberOfAccessingUsers):
             fileUserAccessAssociationObject = FileUserAccessObject
             fileUserAccessAssociationObject.accessId = PermissionsAssignedObject
             fileUserAccessAssociationObject.user = UserObject

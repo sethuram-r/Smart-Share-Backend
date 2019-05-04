@@ -1,5 +1,6 @@
 import configparser
 import datetime
+
 import redis
 
 """ This class gives access to Cache Server which is a Redis Database """
@@ -9,7 +10,7 @@ class RedisCache:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('CoreConfig.ini')
         hostName = config['REDIS']['CACHE_HOST']
         port = int(config['REDIS']['CACHE_PORT'])
         db = int(config['REDIS']['DATABASE'])

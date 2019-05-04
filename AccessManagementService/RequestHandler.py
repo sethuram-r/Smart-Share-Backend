@@ -9,6 +9,7 @@ from AccessManagementService import ServiceInterface
 app = Flask("Access Management Service")
 
 config = configparser.ConfigParser()
+config.read('AccessManagementConfig.ini')
 app.config['SQLALCHEMY_DATABASE_URI'] = config['POSTGRES']['SQLALCHEMY_DATABASE_URI']
 databaseInstance = SQLAlchemy(app)
 databaseInstance.metadata.schema = config['POSTGRES']['SCHEMA']
@@ -27,6 +28,9 @@ def request_preparation(request, path):
         temp["param"] = parameters
         temp["task"] = path
     else:
+        print("data--------->", request)
+        print("data--------->", request.data)
+
         data = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
         temp["data"] = data
         temp["task"] = path

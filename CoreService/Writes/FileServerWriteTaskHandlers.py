@@ -2,7 +2,7 @@ import configparser
 import threading
 
 from CoreService import DataSourceFactory
-from CoreService.Writes import SavepointHandler, FileMetaDataApi, ThreadServices
+from CoreService.Writes import SavepointHandler, FileMetaDataApi, ThreadServices, FileStructureTransformer
 
 """ This class handles the tasks that the business needs from the file  server or file storage. """
 
@@ -11,9 +11,23 @@ class FileServerWriteTaskHandlers:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('CoreConfig.ini')
         self._CacheRole = config['HELPERS']['REDIS_CACHE']
         self._s3Connection = DataSourceFactory.DataSourceFactory().getS3Access()
+
+    def __deleteSavepointInBackground(self, selectedFiles):
+        SavepointHandler.SavepointHandler().deleteSavepoint(selectedFiles)
+
+    def __rollBackSavepointForDeleteOperationInBackground(self, topicName, selectedFiles):
+        SavepointHandler.SavepointHandler().rollBackforDeleteOperation(topicName, selectedFiles)
+
+    def __rollBackSavepointForUploadOperationInBackground(self, topicName, selectedFiles):
+        SavepointHandler.SavepointHandler().rollbackForUploadOperation(topicName, selectedFiles)
+
+    def __pushFilesToCache(self, eachFileToBeUploaded, selectedFileOrFolder, topicName):
+        ThreadServices.ThreadServices().pushToCacheStream(eachFileToBeUploaded, selectedFileOrFolder, topicName)
+
+
 
     def deleteFiles(self, owner, selectedFiles, topicName):
 
@@ -39,7 +53,7 @@ class FileServerWriteTaskHandlers:
             if s3DeletionResults and accessDataDeletionResults == True:  # doubt condition
 
                 try:
-                    deleteSavepointThread = threading.Thread(target=SavepointHandler.SavepointHandler().deleteSavepoint,
+                    deleteSavepointThread = threading.Thread(target=self.__deleteSavepointInBackground,
                                                              args=(selectedFiles,))
                     deleteSavepointThread.daemon = True
                     deleteSavepointThread.start()
@@ -51,7 +65,7 @@ class FileServerWriteTaskHandlers:
 
                 try:
                     rollBackThread = threading.Thread(
-                        target=SavepointHandler.SavepointHandler().rollBackforDeleteOperation,
+                        target=self.__rollBackSavepointForDeleteOperationInBackground,
                         args=(topicName, selectedFiles,))
                     rollBackThread.daemon = True
                     rollBackThread.start()
@@ -87,7 +101,7 @@ class FileServerWriteTaskHandlers:
             selectedFileOrFolder = eachFileToBeUploaded["path"] + eachFileToBeUploaded["name"]
 
         try:
-            thread = threading.Thread(target=ThreadServices.ThreadServices().pushToCacheStream,
+            thread = threading.Thread(target=self.__pushFilesToCache,
                                       args=(eachFileToBeUploaded["file"], selectedFileOrFolder, topicName,))
             thread.daemon = True
             thread.start()
@@ -98,57 +112,90 @@ class FileServerWriteTaskHandlers:
             return False
         return True
 
-    def uploadFiles(self, owner, filesToBeUploaded, topicName, selectedFolder):
+    def _deleteTheCreatedSavepoint(self, filesToCreateSavepoint):
+        try:
+            deleteSavepointThread = threading.Thread(
+                target=self.__deleteSavepointInBackground,
+                args=(filesToCreateSavepoint,))
+            deleteSavepointThread.daemon = True
+            deleteSavepointThread.start()
+            # savepointDeleted = SavepointHandler.SavepointHandler().deleteSavepoint(selectedFiles)
+        except:
+            print("Error unable to delete Savepoint")
 
-        """ This function handles the task of uploading the files in S3 """
+    def putTheUploadedFilesToCache(self, filesToBeUploaded, topicName):
+        cacheInsertionResults = [self.__pushFilesToTheCache(eachFileToBeUploaded, topicName) for
+                                 eachFileToBeUploaded in filesToBeUploaded]
+        print("cacheInsertionResults-------------->", cacheInsertionResults)
+        return cacheInsertionResults
 
-        # Get Files for the Root Folder
+    def accessRecordCreationForEachUploadedFiles(self, owner, filesToBeUploaded):
+        accessRecordsToBeInserted = [self.__createAccessRecord(owner, eachFileToBeUploaded) for
+                                     eachFileToBeUploaded in filesToBeUploaded]
 
-        filesToCreateSavepoint = self._s3Connection.listObjectsForFolder(bucketName=topicName, prefix=selectedFolder)
+        accessRecordsInsertionResults = [
+            FileMetaDataApi.FileMetaDataApi().addUserAccessDetailsForFileorFolderInUserAccessManagementServer(
+                eachAccessRecordsToBeInserted) for eachAccessRecordsToBeInserted in accessRecordsToBeInserted]
+        print("accessRecordsInsertionResults-------------->", accessRecordsInsertionResults)
+        return accessRecordsInsertionResults
 
-        # Savepoint Creation Begins
+    def uploadFiles(self, filesToBeUploaded, topicName):
+        versionIds = [self._s3Connection.uploadObject(eachFileToBeUploaded, topicName) for eachFileToBeUploaded in
+                      filesToBeUploaded]
+        print("versionIds-------------->", versionIds)
+        return versionIds
 
-        savepointCreated = SavepointHandler.SavepointHandler().createSavepointForUploadOperation(topicName, owner,
-                                                                                                 filesToCreateSavepoint)
+    def uploadFilesToRootFolder(self, owner, filesToBeUploaded, topicName):
 
-        if savepointCreated:
-
-            # Step -1 Upload file in S3
-
-            versionIds = [self._s3Connection.uploadObject(eachFileToBeUploaded, topicName) for eachFileToBeUploaded in
-                          filesToBeUploaded]
-
-            if False not in versionIds:
-                accessRecordsToBeInserted = [self.__createAccessRecord(owner, eachFileToBeUploaded) for
-                                             eachFileToBeUploaded in filesToBeUploaded]
-                accessRecordsInsertionResults = FileMetaDataApi.FileMetaDataApi().addUserAccessDetailsForFileorFolderInUserAccessManagementServer(
-                    accessRecordsToBeInserted)
-
-                if accessRecordsInsertionResults:
-                    cacheInsertionResults = [self.__pushFilesToTheCache(eachFileToBeUploaded, topicName) for
-                                             eachFileToBeUploaded in filesToBeUploaded]
-                    if False not in cacheInsertionResults:  # this condition might not be needed can assume that this will always happen
-                        try:
-                            deleteSavepointThread = threading.Thread(
-                                target=SavepointHandler.SavepointHandler().deleteSavepoint,
-                                args=(filesToCreateSavepoint,))
-                            deleteSavepointThread.daemon = True
-                            deleteSavepointThread.start()
-                            # savepointDeleted = SavepointHandler.SavepointHandler().deleteSavepoint(selectedFiles)
-                        except:
-                            print("Error unable to delete Savepoint")
-                        return ({"status": True})
-            else:
-                try:
-                    rollBackThread = threading.Thread(
-                        target=SavepointHandler.SavepointHandler().rollbackForUploadOperation,
-                        args=(topicName, filesToCreateSavepoint,))
-                    rollBackThread.daemon = True
-                    rollBackThread.start()
-                except:
-                    print("Error: unable to Rollback")
-
-                return ({"status": False})
-
+        versionIds = self.uploadFiles(filesToBeUploaded, topicName)
+        if False not in versionIds:
+            accessRecordsInsertionResults = self.accessRecordCreationForEachUploadedFiles(owner, filesToBeUploaded)
+            if False not in accessRecordsInsertionResults:
+                cacheInsertionResults = self.putTheUploadedFilesToCache(filesToBeUploaded, topicName)
+                print("cacheInsertionResults-------------->", cacheInsertionResults)
+                if False not in cacheInsertionResults:
+                    print("reached near return ")
+                    return ({"status": True})
         else:
             return ({"status": False})
+
+    def uploadFilesToDesignatedFolder(self, owner, filesToBeUploaded, topicName, selectedFolder):
+
+        print("--selectedFolder---", selectedFolder)
+        if selectedFolder is None:
+            return self.uploadFilesToRootFolder(owner, filesToBeUploaded, topicName)
+        else:
+            filesToCreateSavepointExtractedFromS3 = self._s3Connection.listObjectsForFolder(bucketName=topicName,
+                                                                                            selectedFolder=selectedFolder)
+            filesToCreateSavepoint = FileStructureTransformer.FileStructureTransformer().transformationProcessPipeline(
+                filesToCreateSavepointExtractedFromS3)
+            print("filesToCreateSavepoint------------>", filesToCreateSavepoint)
+            savepointCreated = SavepointHandler.SavepointHandler().createSavepointForUploadOperation(topicName, owner,
+                                                                                                     filesToCreateSavepoint)
+            if savepointCreated:
+
+                versionIds = self.uploadFiles(filesToBeUploaded, topicName)
+                if False not in versionIds:
+
+                    accessRecordsInsertionResults = self.accessRecordCreationForEachUploadedFiles(owner,
+                                                                                                  filesToBeUploaded)
+                    if False not in accessRecordsInsertionResults:
+
+                        cacheInsertionResults = self.putTheUploadedFilesToCache(filesToBeUploaded, topicName)
+                        if False not in cacheInsertionResults:  # this condition might not be needed can assume that this will always happen
+                            self._deleteTheCreatedSavepoint(filesToCreateSavepoint)
+                            print("reached end point")
+                            return ({"status": True})
+                else:
+                    try:
+                        rollBackThread = threading.Thread(
+                            target=self.__rollBackSavepointForUploadOperationInBackground,
+                            args=(topicName, filesToCreateSavepoint,))
+                        rollBackThread.daemon = True
+                        rollBackThread.start()
+                    except:
+                        print("Error: unable to Rollback")
+
+                    return ({"status": False})
+            else:
+                return ({"status": False})

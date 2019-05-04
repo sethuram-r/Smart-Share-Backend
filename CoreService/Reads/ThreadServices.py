@@ -1,6 +1,6 @@
-import base64
 import configparser
 from json import dumps
+from time import sleep
 
 from kafka import KafkaProducer
 
@@ -11,8 +11,12 @@ class ThreadServices:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('CoreConfig.ini')
         self._insertCacheTask = config['TASKS']['INSERT_CACHE']  # Doubt whether private variable can be passed or not
+
+    def convertBtyeToExactString(self, byteString):
+        return str(byteString).replace("b'", "", 1).replace("'", "").strip()
+
 
     def pushToCacheStream(self, s3Data, selectedFileOrFolder, topicName):
 
@@ -24,17 +28,13 @@ class ThreadServices:
 
         # Record Preparation Begins..
 
-        base64EncodedValue = base64.standard_b64encode(s3Data["Body"].read())
 
         data_to_placed_in_the_stream = {}
-        data_to_placed_in_the_stream["content"] = base64EncodedValue
+        data_to_placed_in_the_stream["content"] = self.convertBtyeToExactString(s3Data)
         data_to_placed_in_the_stream["key"] = selectedFileOrFolder
         data_to_placed_in_the_stream["bucket"] = topicName
 
         # Record Preparation Ends...
 
         result = producer.send('cache', key=self._insertCacheTask, value=data_to_placed_in_the_stream)
-        if (result.is_done):
-            return ({"status": True})
-        else:
-            return ({"status": False})
+        sleep(10)

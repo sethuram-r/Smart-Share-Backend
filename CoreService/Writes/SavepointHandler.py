@@ -11,7 +11,7 @@ class SavepointHandler:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('CoreConfig.ini')
         self._fileMetaDataApi = FileMetaDataApi.FileMetaDataApi()
         self._otherApiCallsForDifferentServers = OtherApiCallsForDifferentServers.OtherApiCallsForDifferentServers()
         self._fileExtension = re.compile("([a-zA-Z0-9\s_\\.\-\(\):])+(\..*)$")
@@ -26,7 +26,8 @@ class SavepointHandler:
             file["data"]["content"] = self._otherApiCallsForDifferentServers.getContentForSelectedFile(topicName,
                                                                                                        selectedFile)
         else:
-            file["data"]["content"] = None
+            file["data"]["content"] = ""
+        print("file in __createSavepointDataFromS3ForEachFile----->", file)
         return file
 
     def createSavepointForUploadOperation(self, topicName, owner, selectedFiles):
@@ -38,6 +39,9 @@ class SavepointHandler:
             # Step -1 :  Gather User  file content for corresponding file through rest call
 
             file = self.__createSavepointDataFromS3ForEachFile(topicName, owner, selectedFile)
+
+            print("file-------------->", file)
+
 
             # Savepoint insertion begins...
 
@@ -72,6 +76,7 @@ class SavepointHandler:
             return True
 
     def deleteSavepoint(self, selectedFiles):
+        print("selectedFiles------------>", selectedFiles)
 
         deletionResult = [self._redisConnection.deleteSavepoint(selectedFile) for selectedFile in
                           selectedFiles]  ## have to check response

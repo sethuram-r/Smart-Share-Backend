@@ -6,7 +6,7 @@ from AccessManagementService.PostgresCommunicator import PostgresWriteTaskHandle
 class ApiImplmentation:
     def __init__(self, request, modelInstance, databaseInstance):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('AccessManagementConfig.ini')
         self.request = request
         self.modelInstance = modelInstance
         self.databaseInstance = databaseInstance

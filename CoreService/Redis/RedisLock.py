@@ -10,7 +10,7 @@ class RedisLock:
     def __init__(self):
 
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('CoreConfig.ini')
         hostName = config['REDIS']['LOCK_HOST']
         port = int(config['REDIS']['LOCK_PORT'])
         db = int(config['REDIS']['DATABASE'])

@@ -8,7 +8,7 @@ class MongoAccess:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('AuthenticationConfig.ini')
         mongo_database = config['MONGO']['DATABASE']
         self.client = MongoClient()
         self.database = self.client.get_database(name=mongo_database)
@@ -24,3 +24,6 @@ class MongoAccess:
 
     def find_one(self, record, collection):
         return collection.find_one(record)
+
+    def replace(self, recordToReplace, replacementRecord, collection):
+        return collection.replace_one(recordToReplace, replacementRecord, upsert=True)

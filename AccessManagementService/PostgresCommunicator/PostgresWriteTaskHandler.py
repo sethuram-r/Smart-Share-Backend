@@ -74,11 +74,12 @@ class PostgresWriteTaskHandler:
         newFileObject = ModelFactory.ModelFactory(self.modelInstance,
                                                   self.databseInstance).getFileAndItsAccessingUsersObjectForNonExistingFile(
             numberOfAccessingUsers)
+
         mappedNewFileObject = RequestToDatabaseObjectMapper.RequestToDatabaseObjectMapper().userAccessDetailToCorrespondingObect(
             newFileObject, accessDetailsToBeInserted)
         self.databseInstance.session.add(mappedNewFileObject)
         commitedId = self.databseInstance.session.commit()
-        if commitedId != None:  # this returns id if the transaction is commited -- doubt of committed id value
+        if commitedId == None:
             return ({"status": True})
         else:
             return ({"status": False})

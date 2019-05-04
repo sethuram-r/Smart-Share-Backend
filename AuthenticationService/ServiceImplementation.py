@@ -3,6 +3,7 @@ import hashlib
 import random
 import string
 from json import dumps
+from time import sleep
 
 from kafka import KafkaProducer
 
@@ -14,7 +15,7 @@ class ServiceImplementation:
 
     def __init__(self, request):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('AuthenticationConfig.ini')
         self.username = config['HELPERS']['USER_NAME']
         self.sessionId = config['HELPERS']['SESSION_ID']
         self.request = request
@@ -43,7 +44,11 @@ class ServiceImplementation:
                                  dumps(x).encode('utf-8'))
 
         data_to_placed_in_the_stream = self.request["data"]
+
+        print("data_to_placed_in_the_stream", data_to_placed_in_the_stream)
         result = producer.send('authentication', key=self.request["task"], value=data_to_placed_in_the_stream)
+        sleep(5)
+        print("result------->", result.is_done)
         if (result.is_done):
             return ({"status": True})
         else:
@@ -58,7 +63,7 @@ class ServiceImplementation:
 
         print("loginCredentialsToBeVerified-------->", loginCredentialsToBeVerified)
 
-        login_credentials_verification_status = DataBaseInterface.DataBaseInterface.findSignInRecordInDatabase(
+        login_credentials_verification_status = DataBaseInterface.DataBaseInterface().findSignInRecordInDatabase(
             loginCredentialsToBeVerified)
         if (login_credentials_verification_status) != "":
             randomKey = self.generateRandomKey()
@@ -66,7 +71,7 @@ class ServiceImplementation:
             # record preparation for producing kafka event begins
 
             duplicatedLoginCredentials = self.request["data"]
-            del duplicatedLoginCredentials[self.username]
+            del duplicatedLoginCredentials["password"]
             duplicatedLoginCredentials[self.sessionId] = randomKey
 
             # put the record in the kafka stream so that it can be consumed by other consumers
@@ -77,6 +82,7 @@ class ServiceImplementation:
 
             data_to_placed_in_the_stream = duplicatedLoginCredentials
             result = producer.send('authentication', key=self.request["task"], value=data_to_placed_in_the_stream)
+            sleep(5)
             if (result.is_done):
                 return ({"status": True, self.sessionId: randomKey})
             else:
@@ -93,7 +99,7 @@ class ServiceImplementation:
 
         print("usersSessionDetailsToVerify-------->", usersSessionDetailsToVerify)
 
-        usersSessionDetailsVerificationStatus = DataBaseInterface.DataBaseInterface.findSessionRecordInDatabase(
+        usersSessionDetailsVerificationStatus = DataBaseInterface.DataBaseInterface().findSessionRecordInDatabase(
             usersSessionDetailsToVerify)
         if (usersSessionDetailsVerificationStatus) != "":
 
@@ -117,6 +123,7 @@ class ServiceImplementation:
 
         data_to_placed_in_the_stream = userToBeLoggedOut
         result = producer.send('authentication', key=self.request["task"], value=data_to_placed_in_the_stream)
+        sleep(5)
         if (result.is_done):
             print("The User has been logged out .......")
             return ({"status": True})
