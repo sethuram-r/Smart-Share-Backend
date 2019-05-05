@@ -16,16 +16,30 @@ class RequestToDatabaseObjectMapper:
         accessRequestObjectForMapping.statusOfRequest = accessRequestToBeMapped["statusOfRequest"]
         return accessRequestObjectForMapping
 
+
     def userAccessDetailToCorrespondingObect(self, userAccessForFileObject, userAccessForFileToBeMapped):
+
         userAccessForFileObject.name = userAccessForFileToBeMapped["file"]
-        userAccessForFileObject.owner.name = userAccessForFileToBeMapped["owner"]
+        doesOwnerExists = userAccessForFileObject.owner.query.filter_by(
+            name=userAccessForFileToBeMapped["owner"]).first()
+        if doesOwnerExists is None:
+            userAccessForFileObject.owner.name = userAccessForFileToBeMapped["owner"]
+        else:
+            userAccessForFileObject.ownerId = doesOwnerExists.id
+            del userAccessForFileObject.owner
 
-        for eachUser in range(len(userAccessForFileToBeMapped["accessing_users"])):
-            accessingUserOfFile = userAccessForFileToBeMapped["accessing_users"][eachUser]
-            accessingUserOfFileObject = userAccessForFileObject.users[eachUser]
-            accessingUserOfFileObject.accessId = accessingUserOfFileObject.accessId.query.filter_by(
-                read=accessingUserOfFile["read"], write=accessingUserOfFile["write"]
-                , delete=accessingUserOfFile["delete"])
-            accessingUserOfFileObject.user.name = accessingUserOfFile["name"]
+        for eachUserInfo in userAccessForFileToBeMapped["accessing_users"]:
+            for eachUserObject in userAccessForFileObject.users:
+                eachUserObject.accessId = eachUserObject.accessId.query.filter_by(read=eachUserInfo["read"],
+                                                                                  write=eachUserInfo["write"],
+                                                                                  delete=eachUserInfo[
+                                                                                      "delete"]).first().id
 
+                print("name-------->", userAccessForFileToBeMapped["owner"])
+                doesUserExists = eachUserObject.user.query.filter_by(name=userAccessForFileToBeMapped["owner"]).first()
+                if doesUserExists is None:
+                    eachUserObject.user.name = eachUserInfo["name"]
+                else:
+                    eachUserObject.userId = doesUserExists.id
+                    del eachUserObject.user
         return userAccessForFileObject
