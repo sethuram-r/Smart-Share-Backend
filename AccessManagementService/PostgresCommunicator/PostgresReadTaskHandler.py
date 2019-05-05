@@ -87,10 +87,23 @@ class PostgresReadTaskHandler:
             listOfFileObjectsInDictionaryFormat)
         return listOfFileObjectsInDictionaryFormatWithNeededKeys
 
+    def fileObjectFormatToDictionary(self, fileObject):
+        fileDict = {}
+        fileDict["file"] = fileObject.name
+        fileDict["owner"] = self.getOwnerDetailsForFile(fileObject.ownerId)
+        fileDict["accessingUsers"] = []
+        for eachUser in fileObject.users:
+            user = {}
+            user["name"] = eachUser.user.name
+            user["read"] = eachUser.accessGiven.__dict__["read"]
+            user["write"] = eachUser.accessGiven.__dict__["write"]
+            user["delete"] = eachUser.accessGiven.__dict__["delete"]
+            fileDict["accessingUsers"].append(user)
+        return fileDict
+
     def fetchUserAcessDataForSingleFileOrFolderInDictionaryFormat(self, fileName):
-        FileObject = ModelFactory.ModelFactory(self.modelInstance,
+        fileObject = ModelFactory.ModelFactory(self.modelInstance,
                                                self.databseInstance).getAccessDetailOfFile(fileName)
-        FileObjectInDictionaryFormat = self.fileObjectsFormatToDictionaries(FileObject)
-        FileObjectInDictionaryFormatWithNeededKeys = self.removeUnwantedKeysInFileObjectsFormatToDictionariesResultset(
-            FileObjectInDictionaryFormat)
-        return FileObjectInDictionaryFormatWithNeededKeys[0]
+        fileObjectInDictionaryFormat = self.fileObjectFormatToDictionary(fileObject)
+
+        return fileObjectInDictionaryFormat
