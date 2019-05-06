@@ -34,8 +34,6 @@ class RequestToDatabaseObjectMapper:
                                                                                   write=eachUserInfo["write"],
                                                                                   delete=eachUserInfo[
                                                                                       "delete"]).first().id
-
-                print("name-------->", userAccessForFileToBeMapped["owner"])
                 doesUserExists = eachUserObject.user.query.filter_by(name=userAccessForFileToBeMapped["owner"]).first()
                 if doesUserExists is None:
                     eachUserObject.user.name = eachUserInfo["name"]

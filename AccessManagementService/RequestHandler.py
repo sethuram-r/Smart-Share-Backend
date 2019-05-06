@@ -28,9 +28,6 @@ def request_preparation(request, path):
         temp["param"] = parameters
         temp["task"] = path
     else:
-        print("data--------->", request)
-        print("data--------->", request.data)
-
         data = json.loads(str(request.data).replace("b", "", 1).replace("'", ""))
         temp["data"] = data
         temp["task"] = path

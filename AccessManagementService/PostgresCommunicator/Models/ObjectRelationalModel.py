@@ -1,24 +1,7 @@
-import configparser
-
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-
-app = Flask("Postgres Management Service")
-
-config = configparser.ConfigParser()
-config.read('AccessManagementConfig.ini')
-app.config['SQLALCHEMY_DATABASE_URI'] = config['POSTGRES']['SQLALCHEMY_DATABASE_URI']
-databaseInstance = SQLAlchemy(app)
-databaseInstance.metadata.schema = config['POSTGRES']['SCHEMA']
-
+from AccessManagementService import databaseInstance
 
 class ObjectRelationalModel:
-    # def __init__(self):
-    #     self.owner = Owner()
-    #     self.file = File()
-    #     self.fileUserAccess = FileUserAccess()
-    #     self.permissionsAssigned = PermissionsAssigned()
-    #     self.user = User()
+
     class Owner(databaseInstance.Model):
         id = databaseInstance.Column(databaseInstance.Integer, primary_key=True)
         name = databaseInstance.Column(databaseInstance.Text)
@@ -29,8 +12,9 @@ class ObjectRelationalModel:
         name = databaseInstance.Column(databaseInstance.Text)
         ownerId = databaseInstance.Column(databaseInstance.Integer, databaseInstance.ForeignKey('owner.id'),
                                           name="owner_id")
-        owner = databaseInstance.relationship("Owner")  ### added apart from tested sample
-        users = databaseInstance.relationship("FileUserAccess", backref="file")
+        owner = databaseInstance.relationship("Owner")
+        users = databaseInstance.relationship("FileUserAccess", backref="file", cascade="save-update, merge, "
+                                                                                        "delete, delete-orphan")
 
     class FileUserAccess(databaseInstance.Model):
         fileId = databaseInstance.Column(databaseInstance.Integer, databaseInstance.ForeignKey('file.id'),

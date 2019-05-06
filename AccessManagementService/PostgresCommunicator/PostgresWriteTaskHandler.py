@@ -1,3 +1,4 @@
+from AccessManagementService import databaseInstance
 from AccessManagementService.PostgresCommunicator.Models import ModelFactory
 from AccessManagementService.PostgresCommunicator.RequestToObjectMappers import RequestToDatabaseObjectMapper
 
@@ -60,10 +61,17 @@ class PostgresWriteTaskHandler:
         resultOfDeleteOperation = []
         for eachFile in FilesForCorrespondingAccessRecordsToBeDeleted:
             fileObject = ModelFactory.ModelFactory(self.modelInstance,
-                                                   self.databseInstance).getAccessDetailOfFile(eachFile)
-            self.databseInstance.session.delete(fileObject)
-            resultOfDeleteOperation.append(self.databseInstance.session.commit())
-        if None not in resultOfDeleteOperation:
+                                                   self.databseInstance).getAccessDetailOfFile(eachFile["Key"])
+
+            try:
+                databaseInstance.session.delete(fileObject)
+                databaseInstance.session.commit()
+                resultOfDeleteOperation.append(True)
+            except:
+                print("Error in deleting Access Details ")
+                resultOfDeleteOperation.append(False)
+
+        if False not in resultOfDeleteOperation:
             return ({"status": True})
         else:
             return ({"status": False})
