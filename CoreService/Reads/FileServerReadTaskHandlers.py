@@ -45,9 +45,6 @@ class FileServerReadTaskHandlers:
         # Key preparation Begins..
 
         keyToBeSearched = "cache:" + topicName + '/' + selectedFileOrFolder
-
-        print("keyToBeSearched----->", keyToBeSearched)
-
         # Key preparation Ends..
 
         if redisConnection.exists(keyToBeSearched) == 1:
@@ -56,9 +53,10 @@ class FileServerReadTaskHandlers:
             return dataFromCache
         else:
             s3Connection = DataSourceFactory.DataSourceFactory().getS3Access()
+
             dataFromS3 = s3Connection.getObject(topicName, selectedFileOrFolder)
             dataFromS3InBase64EncodedFromat = base64.standard_b64encode(dataFromS3["Body"].read())
-            if dataFromS3InBase64EncodedFromat is not None:  # Condition has to be checked
+            if dataFromS3InBase64EncodedFromat is not None:
                 try:
 
                     thread = threading.Thread(target=self.pushTheDownloadedFileToCache,
