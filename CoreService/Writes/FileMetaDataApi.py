@@ -1,8 +1,5 @@
 import configparser
-
 import requests
-
-""" This class handles all the Api calls with User Access Server """
 
 
 class FileMetaDataApi:
@@ -12,30 +9,31 @@ class FileMetaDataApi:
         config.read('CoreConfig.ini')
         self.__accessDataUrl = config['URL']['ACCESS_DATA_INFO_URL']
 
-    def fetchUserAcessDataForSingleFileFromAccessManagementServer(self, owner, selectedFile):
+    def fetchUserAcessDataForSingleFileFromAccessManagementServer(self, selectedFile):
         parameter = {}
-        parameter["owner"] = owner
         parameter["file"] = selectedFile
-        response = requests.get(url=self.__accessDataUrl + "fetchUserAcessDataForSingleFileOrFolder", params=parameter)
-        return response.json()["status"]
+        response = requests.get(url=self.__accessDataUrl + "fetchUserAcessDataForSingleFileOrFolder",
+                                params=parameter).json()
+        return response
 
     def removeUserAccessDetailsForDeletedFiles(self, owner, deletedFiles):
         DeletedFilesOfTheOwner = {}
         DeletedFilesOfTheOwner["owner"] = owner
-        DeletedFilesOfTheOwner["files"] = deletedFiles  ### key name should match with the end point
-        response = requests.post(url=self.__accessDataUrl + "deleteAccessDetailForFiles", data=DeletedFilesOfTheOwner)
+        DeletedFilesOfTheOwner["files"] = deletedFiles
+        response = requests.post(url=self.__accessDataUrl + "removeUserAccessDetailsForDeletedFiles",
+                                 json=DeletedFilesOfTheOwner)
         return response.json()["status"]
 
     def addUserAccessDetailsForFileorFolderInUserAccessManagementServer(self, accessRecordsToBeInserted):
-        print("accessRecordsToBeInserted---->", accessRecordsToBeInserted)
         response = requests.post(url=self.__accessDataUrl + "addUserAccessDetailForFile",
                                  json=accessRecordsToBeInserted)
-        print("rersponse--------------->", response)
         return response.json()["status"]
 
-    def writeOrUpdateUserAccessData(self,
-                                    accessRecord):  # similar to creating new access record in api implementation so can use same method
+    def writeOrUpdateUserAccessData(self, accessRecord):
         accessRecordsToBeInserted = {}
-        accessRecordsToBeInserted["data"]["access"] = accessRecord
-        response = requests.post(url=self.__accessDataUrl + "addUserAccessDetailForFile", data=accessRecord)
+        accessRecordsToBeInserted["file"] = accessRecord["file"]
+        accessRecordsToBeInserted["owner"] = accessRecord["owner"]
+        accessRecordsToBeInserted["accessing_users"] = accessRecord["accessingUsers"]
+        response = requests.post(url=self.__accessDataUrl + "addUserAccessDetailForFile",
+                                 json=accessRecordsToBeInserted)
         return response.json()["status"]

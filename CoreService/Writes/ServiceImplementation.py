@@ -35,5 +35,4 @@ class ServiceImplementation:
         uploadResult = FileServerWriteTaskHandlers.FileServerWriteTaskHandlers().uploadFilesToDesignatedFolder(owner,
                                                                                                                filesToBeUploaded,
                                                                                      topicName, selectedFolder)
-        print("uploadResult-------", uploadResult)
         return uploadResult

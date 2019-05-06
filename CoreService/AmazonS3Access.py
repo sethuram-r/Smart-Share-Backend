@@ -45,11 +45,8 @@ class AmazonS3Access:
 
     def uploadSavepoint(self, bucketName, fileName, fileContent):
         body = base64.b64decode(fileContent)
-        uploadResult = self.client.put_object(Bucket=self.bucketName, ACL='public-read', Body=body, Key=fileName)
+        uploadResult = self.__client.put_object(Bucket=bucketName, ACL='public-read', Body=body, Key=fileName)
         if uploadResult["VersionId"]:
             return True
         else:
             return False
-
-
-AmazonS3Access()

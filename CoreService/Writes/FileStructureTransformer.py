@@ -22,3 +22,6 @@ class FileStructureTransformer:
         else:
             filteredResult = self._filterValidS3Result(s3ResultToBeTransformed)
             return filteredResult
+
+    def extractFileNamesForSavepointCreationInDeleteOperation(self, selectedFiles):
+        return [eachselectedFile["Key"] for eachselectedFile in selectedFiles]

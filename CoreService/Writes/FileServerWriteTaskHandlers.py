@@ -34,7 +34,10 @@ class FileServerWriteTaskHandlers:
         """ This function handles the task of deleting the files in S3 """
 
         # Savepoint Creation Begins
-        savepointCreated = SavepointHandler.SavepointHandler().createSavepointForDeleteOperation(owner, selectedFiles)
+        filesToCreateSavepoint = FileStructureTransformer.FileStructureTransformer().extractFileNamesForSavepointCreationInDeleteOperation(
+            selectedFiles)
+        savepointCreated = SavepointHandler.SavepointHandler().createSavepointForDeleteOperation(owner,
+                                                                                                 filesToCreateSavepoint)
         if savepointCreated:
 
             # Step -1 Delete files in S3
@@ -48,20 +51,21 @@ class FileServerWriteTaskHandlers:
 
             s3DeletionResults = self._s3Connection.deleteObjects(bucketName=topicName, objects=RecordsToBeDeleted)
             # Delete Access Files in the User Access Table
-            accessDataDeletionResults = FileMetaDataApi.FileMetaDataApi().removeUserAccessDetailsForDeletedFiles(owner,
-                                                                                                                 selectedFiles)
-            if s3DeletionResults and accessDataDeletionResults == True:  # doubt condition
+            accessDataDeletionResults = FileMetaDataApi.FileMetaDataApi().removeUserAccessDetailsForDeletedFiles(
+                owner,
+                selectedFiles)
 
+            if (s3DeletionResults and accessDataDeletionResults) is True:
                 try:
                     deleteSavepointThread = threading.Thread(target=self.__deleteSavepointInBackground,
-                                                             args=(selectedFiles,))
+                                                             args=(filesToCreateSavepoint,))
                     deleteSavepointThread.daemon = True
                     deleteSavepointThread.start()
-                    # savepointDeleted = SavepointHandler.SavepointHandler().deleteSavepoint(selectedFiles)
                 except:
                     print("Error unable to delete Savepoint")
                 return ({"status": True})
             else:
+                print("inside Rollback for delete operation")
 
                 try:
                     rollBackThread = threading.Thread(
@@ -69,10 +73,10 @@ class FileServerWriteTaskHandlers:
                         args=(topicName, selectedFiles,))
                     rollBackThread.daemon = True
                     rollBackThread.start()
+                    return ({"status": False})
                 except:
                     print("Error: unable to Rollback")
 
-                return ({"status": False})
         else:
             print("Error: unable to Create Savepoint")
             return ({"status": False})
@@ -119,14 +123,12 @@ class FileServerWriteTaskHandlers:
                 args=(filesToCreateSavepoint,))
             deleteSavepointThread.daemon = True
             deleteSavepointThread.start()
-            # savepointDeleted = SavepointHandler.SavepointHandler().deleteSavepoint(selectedFiles)
         except:
             print("Error unable to delete Savepoint")
 
     def putTheUploadedFilesToCache(self, filesToBeUploaded, topicName):
         cacheInsertionResults = [self.__pushFilesToTheCache(eachFileToBeUploaded, topicName) for
                                  eachFileToBeUploaded in filesToBeUploaded]
-        print("cacheInsertionResults-------------->", cacheInsertionResults)
         return cacheInsertionResults
 
     def accessRecordCreationForEachUploadedFiles(self, owner, filesToBeUploaded):
@@ -136,13 +138,11 @@ class FileServerWriteTaskHandlers:
         accessRecordsInsertionResults = [
             FileMetaDataApi.FileMetaDataApi().addUserAccessDetailsForFileorFolderInUserAccessManagementServer(
                 eachAccessRecordsToBeInserted) for eachAccessRecordsToBeInserted in accessRecordsToBeInserted]
-        print("accessRecordsInsertionResults-------------->", accessRecordsInsertionResults)
         return accessRecordsInsertionResults
 
     def uploadFiles(self, filesToBeUploaded, topicName):
         versionIds = [self._s3Connection.uploadObject(eachFileToBeUploaded, topicName) for eachFileToBeUploaded in
                       filesToBeUploaded]
-        print("versionIds-------------->", versionIds)
         return versionIds
 
     def uploadFilesToRootFolder(self, owner, filesToBeUploaded, topicName):
@@ -152,7 +152,6 @@ class FileServerWriteTaskHandlers:
             accessRecordsInsertionResults = self.accessRecordCreationForEachUploadedFiles(owner, filesToBeUploaded)
             if False not in accessRecordsInsertionResults:
                 cacheInsertionResults = self.putTheUploadedFilesToCache(filesToBeUploaded, topicName)
-                print("cacheInsertionResults-------------->", cacheInsertionResults)
                 if False not in cacheInsertionResults:
                     print("reached near return ")
                     return ({"status": True})
@@ -161,7 +160,6 @@ class FileServerWriteTaskHandlers:
 
     def uploadFilesToDesignatedFolder(self, owner, filesToBeUploaded, topicName, selectedFolder):
 
-        print("--selectedFolder---", selectedFolder)
         if selectedFolder is None:
             return self.uploadFilesToRootFolder(owner, filesToBeUploaded, topicName)
         else:
@@ -169,7 +167,6 @@ class FileServerWriteTaskHandlers:
                                                                                             selectedFolder=selectedFolder)
             filesToCreateSavepoint = FileStructureTransformer.FileStructureTransformer().transformationProcessPipeline(
                 filesToCreateSavepointExtractedFromS3)
-            print("filesToCreateSavepoint------------>", filesToCreateSavepoint)
             savepointCreated = SavepointHandler.SavepointHandler().createSavepointForUploadOperation(topicName, owner,
                                                                                                      filesToCreateSavepoint)
             if savepointCreated:
@@ -184,7 +181,6 @@ class FileServerWriteTaskHandlers:
                         cacheInsertionResults = self.putTheUploadedFilesToCache(filesToBeUploaded, topicName)
                         if False not in cacheInsertionResults:  # this condition might not be needed can assume that this will always happen
                             self._deleteTheCreatedSavepoint(filesToCreateSavepoint)
-                            print("reached end point")
                             return ({"status": True})
                 else:
                     try:

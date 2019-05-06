@@ -1,5 +1,6 @@
 import configparser
 import re
+from ast import literal_eval as eval
 
 from CoreService import DataSourceFactory
 from CoreService.Writes import FileMetaDataApi, OtherApiCallsForDifferentServers
@@ -17,8 +18,9 @@ class SavepointHandler:
         self._fileExtension = re.compile("([a-zA-Z0-9\s_\\.\-\(\):])+(\..*)$")
         self._transactionRole = config['HELPERS']['REDIS_TRANSACTION']
         self._redisConnection = DataSourceFactory.DataSourceFactory().getRedisAccess(self._transactionRole)
+        self.defaultTopicName = config['HELPERS']['DEFAULT_TOPIC_NAME']
 
-    def __createSavepointDataFromS3ForEachFile(self, topicName, owner, selectedFile):
+    def __createSavepointDataFromS3ForEachFile(self, topicName, selectedFile):
         file = {}
         file["key"] = selectedFile
         file["data"] = {}
@@ -38,7 +40,7 @@ class SavepointHandler:
 
             # Step -1 :  Gather User  file content for corresponding file through rest call
 
-            file = self.__createSavepointDataFromS3ForEachFile(topicName, owner, selectedFile)
+            file = self.__createSavepointDataFromS3ForEachFile(topicName, selectedFile)
 
             print("file-------------->", file)
 
@@ -56,13 +58,16 @@ class SavepointHandler:
 
         insertionResults = []
         for selectedFile in selectedFiles:
+            print("selectedFile------->", selectedFile)
             # Savepoint Creation for each file begins....
 
             # Step -1 :  Gather User access data and file content for corresponding file through rest call
 
-            file = self.__createSavepointDataFromS3ForEachFile(owner, selectedFile["key"])
+            file = self.__createSavepointDataFromS3ForEachFile(self.defaultTopicName, selectedFile)
+            print("file-------------->", file)
             file["data"]["access"] = self._fileMetaDataApi.fetchUserAcessDataForSingleFileFromAccessManagementServer(
-                owner, selectedFile["key"])
+                selectedFile)
+            print("file-------------->", file)
 
             # Step - 2 Insert the file details to Transaction Database
 
@@ -77,6 +82,10 @@ class SavepointHandler:
 
     def deleteSavepoint(self, selectedFiles):
         print("selectedFiles------------>", selectedFiles)
+        print("selectedFiles type -- ", type(selectedFiles))
+        for i in selectedFiles:
+            print(i)
+            print(type(i))
 
         deletionResult = [self._redisConnection.deleteSavepoint(selectedFile) for selectedFile in
                           selectedFiles]  ## have to check response
@@ -97,6 +106,15 @@ class SavepointHandler:
                 print("{}------{}----{}".format('Warning', eachBackupFileWithData,
                                                 'Error in Rollback for Upload Operation'))  # logger implementation
 
+    def decodeValuesToString(self, value):
+        return value.decode('utf8')
+
+    def convertEachBackupFileWithDataToDictionary(self, eachBackupFileWithData):
+        utfDecodedEachBackupFileWithData = self.decodeValuesToString(eachBackupFileWithData)
+        return eval(utfDecodedEachBackupFileWithData)
+
+
+
     def rollBackforDeleteOperation(self, topicName, selectedFiles):
 
         getAllBackupFilesForSelectedFolder = self._redisConnection.getKeysWithPattern(
@@ -106,19 +124,31 @@ class SavepointHandler:
 
         for eachBackupFile in getAllBackupFilesForSelectedFolder:
 
+            eachBackupFileKeyWithoutBackupWordInIt = self.decodeValuesToString(eachBackupFile).replace("backup:",
+                                                                                                       "").strip()
+
+
             eachBackupFileWithData = self._redisConnection.getDataForTheFile(eachBackupFile, mapping='data')
+            eachBackupFileWithDataInDictonaryFormat = self.convertEachBackupFileWithDataToDictionary(
+                eachBackupFileWithData)
 
-            # step-1 put the access data back
-
-            insertOrUpdateResult = self._fileMetaDataApi.writeOrUpdateUserAccessData(eachBackupFileWithData)
-
+            print("eachBackupFileWithData------->", eachBackupFileWithDataInDictonaryFormat)
             # step-2 put the S3 data back
 
             uploadResult = self._otherApiCallsForDifferentServers.writeOrUpdateSavepointInS3(topicName,
-                                                                                             eachBackupFileWithData[
-                                                                                                 "key"],
-                                                                                             eachBackupFileWithData[
-                                                                                                 "data"]["content"])
+                                                                                             eachBackupFileKeyWithoutBackupWordInIt,
+                                                                                             eachBackupFileWithDataInDictonaryFormat
+                                                                                             ["content"])
+            print("uploadResult---------->", uploadResult)
+
+            # step-1 put the access data back
+
+            insertOrUpdateResult = self._fileMetaDataApi.writeOrUpdateUserAccessData(
+                eachBackupFileWithDataInDictonaryFormat["access"])
+            print("insertOrUpdateResult---------->", insertOrUpdateResult)
+
+
+
 
             if insertOrUpdateResult and uploadResult == False:  # Doubt Condition
                 print("{}------{}----{}".format('Warning', eachBackupFile,

@@ -21,7 +21,6 @@ class OtherApiCallsForDifferentServers:
         parameter["key"] = fileName
         contentOfSelectedFile = requests.get(url=self.__accessDataUrl + "downloadSelectedFileOrFolders",
                                              params=parameter)
-        print("contentOfSelectedFile--------->", contentOfSelectedFile.text)
         return contentOfSelectedFile.text
 
 
