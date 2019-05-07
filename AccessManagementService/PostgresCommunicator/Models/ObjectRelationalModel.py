@@ -39,3 +39,15 @@ class ObjectRelationalModel:
         def __repr__(self):
             return '<PermissionsAssigned %r %r %r>' % (
                 self.read, self.write, self.delete)
+
+    class AccessRequest(databaseInstance.Model):
+        id = databaseInstance.Column(databaseInstance.Integer, primary_key=True)
+        file = databaseInstance.Column(databaseInstance.Text)
+        ownerOfFile = databaseInstance.Column(databaseInstance.Text, name='owner_of_file')
+        userName = databaseInstance.Column(databaseInstance.Text, name='user_name')
+        accessType = databaseInstance.Column(databaseInstance.Text, name='access_type')
+        statusOfRequest = databaseInstance.Column(databaseInstance.Text, name='status_of_request')
+
+        def __repr__(self):
+            return '<AccessRequest %r %r %r %r %r %r>' % (
+                self.id, self.file, self.ownerOfFile, self.userName, self.accessType, self.statusOfRequest)

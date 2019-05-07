@@ -23,9 +23,7 @@ class PostgresReadTaskHandler:
             for eachUser in eachFileObject.users:
                 if (eachUser.user.name != ownerName):
                     fileUserRecord["name"] = eachUser.user.name
-                    fileUserRecord["access"] = self.accessDetailsForParticularFileUserFormatter(eachUser.accessGiven,
-                                                                                                fileUserRecord[
-                                                                                                    "access"])
+                    self.accessDetailsForParticularFileUserFormatter(eachUser.accessGiven, fileUserRecord)
                     filesOfTheUserAccessesByOthers.append(fileUserRecord)
         return filesOfTheUserAccessesByOthers
 

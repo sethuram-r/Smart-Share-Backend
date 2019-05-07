@@ -1,33 +1,26 @@
 import configparser
 from json import loads
 
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from kafka import KafkaConsumer
 
 from AccessManagementService.PostgresCommunicator import PostgresWriteTaskHandler
 
-app = Flask('Postgres Consumer')
-
 config = configparser.ConfigParser()
 config.read('AccessManagementConfig.ini')
-app.config['SQLALCHEMY_DATABASE_URI'] = config['POSTGRES']['SQLALCHEMY_DATABASE_URI']
-database = SQLAlchemy(app)
-database.metadata.schema = config['POSTGRES']['SCHEMA']
 
 createAccessRequestKey = config['TASKS']['CREATE_ACCESS_REQUEST']
 deleteAccessRequestKey = config['TASKS']['DELETE_ACCESS_REQUEST']
 approveOrRejectAccessRequest = config['TASKS']['APPROVE_REJECT_ACCESS_REQUEST']
 
 
-def FileOwnerApproveOrRejectAccessRequest(accessRequestToBeApprovedOrRejected):
-    if accessRequestToBeApprovedOrRejected["status"] == "approve":
-        PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).approveAccessRequest(
-            accessRequestToBeApprovedOrRejected)
-    else:
-        PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).rejectAccessRequest(
-            accessRequestToBeApprovedOrRejected)
-
+# def FileOwnerApproveOrRejectAccessRequest(accessRequestToBeApprovedOrRejected):
+#     if accessRequestToBeApprovedOrRejected["status"] == "approve":
+#         PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).approveAccessRequest(
+#             accessRequestToBeApprovedOrRejected)
+#     else:
+#         PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).rejectAccessRequest(
+#             accessRequestToBeApprovedOrRejected)
+#
 
 def keyDeserializer(key):
     return key.decode('utf-8')
@@ -52,15 +45,15 @@ def consumer():
          This would have been done by forming a new stream through stream processing using faust"""
 
         if keyDeserializer(requests_or_records.key) == createAccessRequestKey:
-            PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).createAccessRequest(
+            PostgresWriteTaskHandler.PostgresWriteTaskHandler().createAccessRequest(
                 valueDeserializer(requests_or_records.value))
 
-        if keyDeserializer(requests_or_records.key) == deleteAccessRequestKey:
-            PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).deleteAccessRequestRecord(
-                valueDeserializer(requests_or_records.value))
-
-        if keyDeserializer(requests_or_records.key) == approveOrRejectAccessRequest:
-            FileOwnerApproveOrRejectAccessRequest(valueDeserializer(requests_or_records.value))
+        # if keyDeserializer(requests_or_records.key) == deleteAccessRequestKey:
+        #     PostgresWriteTaskHandler.PostgresWriteTaskHandler(database.Model, database).deleteAccessRequestRecord(
+        #         valueDeserializer(requests_or_records.value))
+        #
+        # if keyDeserializer(requests_or_records.key) == approveOrRejectAccessRequest:
+        #     FileOwnerApproveOrRejectAccessRequest(valueDeserializer(requests_or_records.value))
 
 
 consumer()

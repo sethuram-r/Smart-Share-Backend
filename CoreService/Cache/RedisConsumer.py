@@ -10,7 +10,7 @@ class RedisConsumer:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read('CoreConfig.ini')
         self._insertCacheTask = config['TASKS']['INSERT_CACHE']
         self._redisRole = config['HELPERS']['REDIS_CACHE']
         self.consumer()
@@ -32,6 +32,13 @@ class RedisConsumer:
             "{}------{}----{}".format('Warning', recordsToBeInserted,
                                       'Error in Cache Insertion'))  # logger implementation
 
+    def keyDeserializer(self, key):
+        return key.decode('utf-8')
+
+    def valueDeserializer(self, value):
+        return loads(value.decode('utf-8'))
+
+
     def consumer(self):
 
         """ This is a kafka consumer that consumes the events and sends to the corresponding event handlers"""
@@ -41,13 +48,15 @@ class RedisConsumer:
             bootstrap_servers=['localhost:9092'],
             auto_offset_reset='earliest',
             enable_auto_commit=True,
-            group_id='core-group',
-            key_deserializer=lambda x: (x.decode('utf-8')),
-            value_deserializer=lambda x: loads(x.decode('utf-8')))
+            group_id='core-group'
+            # key_deserializer=lambda x: (x.decode('utf-8')),
+            # value_deserializer=lambda x: loads(x.decode('utf-8'))
+        )
         for records in consumer:
             print("requests_or_records----------->", records.value)
 
             """ Based on the key the events are filtered and processed.
              This would have been done by forming a new stream through stream processing using faust"""
 
-            if records.key == self._insertCacheTask: self.insertIntoCache(records.value)
+            if self.keyDeserializer(records.key) == self._insertCacheTask: self.insertIntoCache(
+                self.valueDeserializer(records.value))

@@ -3,26 +3,17 @@ from AccessManagementService.PostgresCommunicator.Models import ObjectRelational
 
 class ModelFactory:
 
-    def __init__(self, model, db):
+    def __init__(self, model=None, db=None):
         self.model = model
         self.db = db
-
         self.objectRelationalModel = ObjectRelationalModel.ObjectRelationalModel()
 
     def getAccessRequestObject(self):
-        class AccessRequest(self.model):
-            # id  = self.db.Column(self.db.Integer, primary_key=True)  # not need
-            file = self.db.Column(self.db.String(100), nullable=False)
-            ownerOfFile = self.db.Column(self.db.String(100), nullable=False)
-            userName = self.db.Column(self.db.String(100), nullable=False)
-            accessType = self.db.Column(self.db.String(100), nullable=False)
-            statusOfRequest = self.db.Column(self.db.String(100), nullable=False)
+        return self.objectRelationalModel.AccessRequest()
 
-            def __repr__(self):
-                return '<AccessRequest %r %r %r %r %r %r>' % (
-                self.id, self.file, self.ownerOfFile, self.username, self.accessType, self.statusOfRequest)
-
-        return AccessRequest()
+    def getAccessRequestObjectToBeDeletedOrApprovedOrRejected(self, accessRequestToBeDeleted):
+        accessRequestObject = self.objectRelationalModel.AccessRequest()
+        return accessRequestObject.query.filter_by(**accessRequestToBeDeleted).first()
 
     def getAccessRequestsOfTheUser(self, userName):
         accessRequestObject = self.getAccessRequestObject()
@@ -63,35 +54,42 @@ class ModelFactory:
         return accessRecord
 
     def accessDetailsToBeUpdatedForThatUser(self, existingAccess, accessToUpdate):
-        accessRecord = existingAccess.__dict__
-        del accessRecord["id"]
-        del accessRecord["_sa_instance_state"]
-        accessRecord[accessToUpdate] = True
-        return accessRecord
+        print("accessDetailsToBeUpdatedForThatUser")
+        existingAccessInDictionaryFormat = existingAccess.__dict__
+        if accessToUpdate in existingAccessInDictionaryFormat:
+            existingAccessInDictionaryFormat[accessToUpdate] = True
+        return existingAccessInDictionaryFormat
 
     def getFileAndItsAccessingUsersObjectForExistingFile(self, accessRequestToBeApproved):
 
         fileName = accessRequestToBeApproved["file"]
-        ownerName = accessRequestToBeApproved["owner"]
-        userName = accessRequestToBeApproved["username"]
+        ownerName = accessRequestToBeApproved["ownerOfFile"]
+        userName = accessRequestToBeApproved["userName"]
 
         OwnerObject, FileObject, FileUserAccessObject, PermissionsAssignedObject, UserObject = self.getFileAndItsAccessingUsersModel()
 
         ownerData = OwnerObject.query.filter_by(name=ownerName).first()
-        accessingUsersOfGivenFileData = FileObject.query.filter_by(name=fileName, owner_id=ownerData.id).first()
+        accessingUsersOfGivenFileData = FileObject.query.filter_by(name=fileName, ownerId=ownerData.id).first()
 
         for eachFileUserAssoc in accessingUsersOfGivenFileData.users:
             if eachFileUserAssoc.user.name == userName:
+                print(eachFileUserAssoc.accessGiven)
+                print(accessRequestToBeApproved["accessType"])
                 accessDetails = self.accessDetailsToBeUpdatedForThatUser(eachFileUserAssoc.accessGiven,
-                                                                         accessRequestToBeApproved["access"])
-                eachFileUserAssoc.access_id = PermissionsAssignedObject.query.filter_by(**accessDetails).first().id
+                                                                         accessRequestToBeApproved["accessType"])
+                eachFileUserAssoc.accessId = PermissionsAssignedObject.query.filter_by(read=accessDetails["read"],
+                                                                                       write=accessDetails["write"],
+                                                                                       delete=accessDetails[
+                                                                                           "delete"]).first().id
+
                 return accessingUsersOfGivenFileData  ### unsure
 
-        accessDetails = self.accessDetailsFormatter(accessRequestToBeApproved["access"])
-        FileUserAccessObject.access_id = PermissionsAssignedObject.query.filter_by(**accessDetails).first().id
+        accessDetails = self.accessDetailsFormatter(accessRequestToBeApproved["accessType"])
+        FileUserAccessObject.accessId = PermissionsAssignedObject.query.filter_by(**accessDetails).first().id
         UserObject.name = userName
         FileUserAccessObject.user = UserObject
         accessingUsersOfGivenFileData.append(FileUserAccessObject)
+        print("accessingUsersOfGivenFileData-----", accessingUsersOfGivenFileData)
         return accessingUsersOfGivenFileData
 
     def getFilesObjectForspecificUser(self, ownerName):

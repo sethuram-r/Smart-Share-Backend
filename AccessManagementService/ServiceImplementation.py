@@ -1,5 +1,6 @@
 import configparser
 from json import dumps
+from time import sleep
 
 from kafka import KafkaProducer
 
@@ -21,20 +22,24 @@ class ServiceImplementation:
                                       value_serializer=lambda x:
                                       dumps(x).encode('utf-8'))
 
-    def createAccessRequest(self):  # accessRequest has been renamed to this function name
+    def createAccessRequest(self):
 
         data_to_placed_in_the_stream = self.request["param"]
         result = self.producer.send('access_management', key=self.request["task"], value=data_to_placed_in_the_stream)
+        sleep(5)
         if (result.is_done):
             return ({"status": True})
         else:
+            print("Access Request is not initiated")
             return ({"status": False})
 
     def deleteApprovedOrRejectedAccessRequest(self):  # deleteRecord has been renamed to this function --kafka
 
         data_to_placed_in_the_stream = self.request["data"]
         result = self.producer.send('access_management', key=self.request["task"], value=data_to_placed_in_the_stream)
+        sleep(5)
         if (result.is_done):
+            print("Delete Request is initiated")
             return ({"status": True})
         else:
             return ({"status": False})
@@ -43,6 +48,7 @@ class ServiceImplementation:
 
         data_to_placed_in_the_stream = self.request["data"]
         result = self.producer.send('access_management', key=self.request["task"], value=data_to_placed_in_the_stream)
+        sleep(5)
         if (result.is_done):
             return ({"status": True})
         else:

@@ -5,57 +5,75 @@ from AccessManagementService.PostgresCommunicator.RequestToObjectMappers import 
 
 class PostgresWriteTaskHandler:
 
-    def __init__(self, modelInstance, databseInstance):
+    def __init__(self, modelInstance=None, databseInstance=None):
         self.modelInstance = modelInstance
         self.databseInstance = databseInstance
 
     def createAccessRequest(self, accessRequest):
 
-        accessRequestObject = ModelFactory.ModelFactory(self.modelInstance,
-                                                        self.databseInstance).getAccessRequestObject()
+        accessRequestObject = ModelFactory.ModelFactory().getAccessRequestObject()
         requestMappedAccessRequestObject = RequestToDatabaseObjectMapper.RequestToDatabaseObjectMapper().RequestMappedAccessRequestObject(
             accessRequestObject, accessRequest)
-        self.databseInstance.session.add(requestMappedAccessRequestObject)
-        commitedId = self.databseInstance.session.commit()  # this returns id if the transaction is commited
-        if commitedId == None: print('Warning createAccessRequest Error in Insertion')  # logger implementation
+
+        try:
+            databaseInstance.session.add(requestMappedAccessRequestObject)
+            databaseInstance.session.commit()
+            print("Access Request has been successfully created")  # logger implementation
+        except:
+            print("Failed to create Access Request")
+
+    def addUserToFileAccessingUserList(self, accessRequestToBeApproved):
+
+        fileUserAccessObjectForGivenFileAndOwner = ModelFactory.ModelFactory().getFileAndItsAccessingUsersObjectForExistingFile(
+            accessRequestToBeApproved)
+
+        try:
+            databaseInstance.session.add(fileUserAccessObjectForGivenFileAndOwner)
+            databaseInstance.session.commit()
+            print("Access Request has been successfully added to the existing file")  # logger implementation
+        except:
+            print("Access Request has not been successfully added to the existing file")
+
+
 
     def approveAccessRequest(self, accessRequestToBeApproved):
-        accessRequestObject = ModelFactory.ModelFactory(self.modelInstance,
-                                                        self.databseInstance).getAccessRequestObject()
-        accessRequestForWhichStatusHasToBeApproved = accessRequestObject.query.filter_by(
-            file=accessRequestToBeApproved["file"], ownerOfFile=accessRequestToBeApproved["owner"]).all()
-        print("accessRequestForWhichStatusHasToBeApproved-------->", accessRequestForWhichStatusHasToBeApproved)
-        accessRequestForWhichStatusHasToBeApproved.statusOfRequest = "approved"
-        self.databseInstance.session.add(accessRequestForWhichStatusHasToBeApproved)
-        commitedId = self.databseInstance.session.commit()  ## unsure whether it works or not
-        if commitedId != None:
-            fileUserAccessObjectForGivenFileAndOwner = ModelFactory.ModelFactory(self.modelInstance,
-                                                                                 self.databseInstance).getFileAndItsAccessingUsersObjectForExistingFile(
-                accessRequestToBeApproved)
-            self.databseInstance.session.add(fileUserAccessObjectForGivenFileAndOwner)
-            commitedId = self.databseInstance.session.commit()  # this returns id if the transaction is commited
-            if commitedId == None: print('Warning approveAccessRequest Error in Insertion')  # logger implementation
+
+        accessRequestForWhichStatusHasToBeApproved = ModelFactory.ModelFactory().getAccessRequestObjectToBeDeletedOrApprovedOrRejected(
+            accessRequestToBeApproved)
+        if accessRequestForWhichStatusHasToBeApproved is not None and accessRequestForWhichStatusHasToBeApproved.statusOfRequest == "ongoing":
+            accessRequestForWhichStatusHasToBeApproved.statusOfRequest = "approved"
+            try:
+                databaseInstance.session.add(accessRequestForWhichStatusHasToBeApproved)
+                databaseInstance.session.commit()
+                print("Access Request has been successfully approved")  # logger implementation
+                self.addUserToFileAccessingUserList(accessRequestToBeApproved)
+            except:
+                print("Failed to approve Access Request")
+
 
     def rejectAccessRequest(self, accessRequestToBeRejected):
-        accessRequestObject = ModelFactory.ModelFactory(self.modelInstance,
-                                                        self.databseInstance).getAccessRequestObject()
-        accessRequestForWhichStatusHasToBeRejected = accessRequestObject.query.filter_by(
-            file=accessRequestToBeRejected["file"], ownerOfFile=accessRequestToBeRejected["owner"]).all()
-        print("accessRequestForWhichStatusHasToBeRejected-------->", accessRequestForWhichStatusHasToBeRejected)
-        accessRequestForWhichStatusHasToBeRejected.statusOfRequest = "rejected"
-        self.databseInstance.session.add(accessRequestForWhichStatusHasToBeRejected)
-        commitedId = self.databseInstance.session.commit()
-        if commitedId == None: print('Warning rejectAccessRequest Error in Insertion')  # logger implementation
+
+        accessRequestForWhichStatusHasToBeRejected = ModelFactory.ModelFactory().getAccessRequestObjectToBeDeletedOrApprovedOrRejected(
+            accessRequestToBeRejected)
+        if accessRequestForWhichStatusHasToBeRejected is not None and accessRequestForWhichStatusHasToBeRejected.statusOfRequest == "ongoing":
+            accessRequestForWhichStatusHasToBeRejected.statusOfRequest = "rejected"
+            try:
+                databaseInstance.session.add(accessRequestForWhichStatusHasToBeRejected)
+                databaseInstance.session.commit()
+                print("Access Request has been successfully rejected")  # logger implementation
+            except:
+                print("Failed to reject Access Request")
+
 
     def deleteAccessRequestRecord(self, accessRequestToBeDeleted):
-        accessRequestObject = ModelFactory.ModelFactory(self.modelInstance,
-                                                        self.databseInstance).getAccessRequestObject()
-        requestMappedAccessRequestObject = RequestToDatabaseObjectMapper.RequestToDatabaseObjectMapper().RequestMappedAccessRequestObjectForDelete(
-            accessRequestObject,
-            accessRequestToBeDeleted)  ### have to check whether its needed or not if not the request can be diretly sennt to db
-        self.databseInstance.session.delete(requestMappedAccessRequestObject)
-        commitedId = self.databseInstance.session.commit()  # this returns id if the transaction is commited
-        if commitedId == None: print('Warning deleteAccessRequest Error in Deletion')
+        accessRequestObjectToBeDeleted = ModelFactory.ModelFactory().getAccessRequestObjectToBeDeletedOrApprovedOrRejected(
+            accessRequestToBeDeleted)
+        try:
+            databaseInstance.session.delete(accessRequestObjectToBeDeleted)
+            databaseInstance.session.commit()
+            print("Access Request has been successfully deleted")  # logger implementation
+        except:
+            print('Warning deleteAccessRequest Error in Deletion')
 
     def deleteAccessDetailForFiles(self, FilesForCorrespondingAccessRecordsToBeDeleted):
         resultOfDeleteOperation = []
