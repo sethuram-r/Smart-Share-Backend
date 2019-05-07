@@ -11,27 +11,17 @@ class FileStructureTransformer:
         self.bucketName = bucketName
         self.accessDetailsForFilesAndFolders = accesssDetailsForFilesAndFolders
 
-    def defaultAssignmentToEachFileAndFolderForNonExistingAccessDetails(self, node):
-        node["read"] = True
-        node["write"] = True
-        node["delete"] = True
-        return node
-
     def accessAssignmentToEachFileAndFolder(self, node, metadata):  # untested
 
         node["owner"] = metadata["owner"]
-        for user in metadata["accessing_users"]:
+        for user in metadata["accessingUsers"]:
             if (user["name"] == self.userName):
                 if "read" in user: node["read"] = user["read"]
                 if "write" in user: node["write"] = user["write"]
                 if "delete" in user: node["delete"] = user["delete"]
-            else:
-                self.defaultAssignmentToEachFileAndFolderForNonExistingAccessDetails(node)
         return node
 
     def findAccessDetailsForSpecificFileorFolder(self, neededFileOrFolder):
-
-        if self.accessDetailsForFilesAndFolders is None: return None  ### This scenario shouldn't be happening if every steps are done properly. this is to avoid breaking of code.
 
 
         for eachFileorFolder in self.accessDetailsForFilesAndFolders:  # untested

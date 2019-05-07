@@ -1,4 +1,5 @@
 import configparser
+import requests
 
 
 class FileAccessMetaDataApi:
@@ -10,9 +11,5 @@ class FileAccessMetaDataApi:
         self.__defaultTopicName = config['HELPERS']['DEFAULT_TOPIC_NAME']
 
     def fetchUserAcessDataForFilesandFolders(self):
-        return None  # have to remove once access management is done
-
-        # response = requests.get(url=self.__accessDataUrl)
-        # print("response------------------>", response)
-        #
-        # return response
+        response = requests.get(url=self.__accessDataUrl + "fetchUserAcessDataForFilesandFolders")
+        return response.json()

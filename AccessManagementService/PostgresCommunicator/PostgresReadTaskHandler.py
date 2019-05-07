@@ -55,8 +55,9 @@ class PostgresReadTaskHandler:
     def fileObjectsFormatToDictionaries(self, listOfFileObjects):
         listOfFileObjectsInDictionaryFormat = []
         for eachFileObject in listOfFileObjects:
-            eachFileDict = eachFileObject.__dict__
-            eachFileDict["owner"] = self.getOwnerDetailsForFile(eachFileDict["owner_id"])
+            eachFileDict = {}
+            eachFileDict["file"] = eachFileObject.name
+            eachFileDict["owner"] = self.getOwnerDetailsForFile(eachFileObject.ownerId)
             eachFileDict["accessingUsers"] = []
             for eachUser in eachFileObject.users:
                 user = {}
@@ -68,22 +69,11 @@ class PostgresReadTaskHandler:
             listOfFileObjectsInDictionaryFormat.append(eachFileDict)
         return listOfFileObjectsInDictionaryFormat
 
-    def removeUnwantedKeysInFileObjectsFormatToDictionariesResultset(self, listOfFileObjectsInDictionaryFormat):
-
-        for eachFile in listOfFileObjectsInDictionaryFormat:
-            del eachFile["_sa_instance_state"]
-            del eachFile["id"]
-            del eachFile["users"]
-            del eachFile["owner_id"]
-        return listOfFileObjectsInDictionaryFormat
-
     def fetchUserAcessDataForFilesandFoldersInDictionaryFormat(self):
         listOfFileObjects = ModelFactory.ModelFactory(self.modelInstance,
                                                       self.databseInstance).listAllFileAccessDetails()
         listOfFileObjectsInDictionaryFormat = self.fileObjectsFormatToDictionaries(listOfFileObjects)
-        listOfFileObjectsInDictionaryFormatWithNeededKeys = self.removeUnwantedKeysInFileObjectsFormatToDictionariesResultset(
-            listOfFileObjectsInDictionaryFormat)
-        return listOfFileObjectsInDictionaryFormatWithNeededKeys
+        return listOfFileObjectsInDictionaryFormat
 
     def fileObjectFormatToDictionary(self, fileObject):
         fileDict = {}
