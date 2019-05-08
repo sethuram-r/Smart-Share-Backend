@@ -1,5 +1,6 @@
 import configparser
 
+from CoreService import logging
 from CoreService.Writes import FileServerWriteTaskHandlers
 
 """ This class is the core implementation of Business logic done through various task handlers."""
@@ -17,8 +18,8 @@ class ServiceImplementation:
         self.request = request
 
 
-
     def deleteSelectedFileOrFolders(self):
+        logging.info("Inside deleteSelectedFileOrFolders")
 
         selctedFilesToBeDeleted = self.request["data"]
         owner = selctedFilesToBeDeleted["owner"]
@@ -27,6 +28,8 @@ class ServiceImplementation:
         return FileServerWriteTaskHandlers.FileServerWriteTaskHandlers().deleteFiles(owner, selectedFiles, topicName)
 
     def uploadFileOrFolder(self):
+        logging.info("Inside uploadFileOrFolder")
+
         dataToBeUploaded = self.request["data"]
         owner = dataToBeUploaded["owner"]
         filesToBeUploaded = dataToBeUploaded["data"]

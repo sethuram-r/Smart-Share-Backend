@@ -3,7 +3,7 @@ from json import loads
 
 from kafka import KafkaConsumer
 
-from AuthenticationService import MongoAccess
+from AuthenticationService import MongoAccess, logging
 
 
 class AuthenticationConsumer:
@@ -27,42 +27,41 @@ class AuthenticationConsumer:
 
     def signUp(self, signup_requests):
 
-        """ Function to insert the user registration details into DB """
+        logging.info("Consumer: Inside signUp")
 
         collection = self.mongo_connection.return_collection(self.registered_users_collection)
         insertion_result = self.mongo_connection.insert(signup_requests, collection)
-        if insertion_result.acknowledged == False: print(
-            "{}------{}----{}".format('Warning', signup_requests, 'Error in Insertion'))  # logger implementation
+        if insertion_result.acknowledged == False:
+            logging.critical("Error in Insertion during SignUp %s", signup_requests)
+
+    def createSearchRecordForReplace(self, record):
+        searchRecord = {}
+        if "username" in record: searchRecord["username"] = record["username"]
+        return searchRecord
+
 
     def signIn(self, session_records):
 
-        print(session_records)
-
-        """ Function to insert the session key into DB
-        which is obtained from processing the sigin request that is consumed through streams """
+        logging.info("Consumer: Inside signIn")
 
         collection = self.mongo_connection.return_collection(self.session_validation_collection)
-        insertion_result = self.mongo_connection.insert(session_records, collection)
-        if insertion_result.acknowledged == False: print(
-            "{}------{}----{}".format('Warning', session_records, 'Error in Insertion'))  # logger implementation
+        insertion_result = self.mongo_connection.replace(
+            recordToReplace=self.createSearchRecordForReplace(session_records),
+            replacementRecord=session_records, collection=collection)
+        if insertion_result.acknowledged == False:
+            logging.critical("Error in Insertion during SignIn %s", session_records)
 
     def logOut(self, logout_records):
 
-        """ Function to delete the session key in DB
-        which is obtained from processing the logout request that is consumed through streams """
+        logging.info("Consumer: Inside logOut")
 
         collection = self.mongo_connection.return_collection(self.session_validation_collection)
         deletion_result = self.mongo_connection.delete_one(logout_records, collection)
-        if deletion_result.deleted_count != 1: print(
-            "{}------{}----{}".format('Warning', logout_records, 'Error in Deletion'))  # logger implementation
+        if deletion_result.deleted_count != 1:
+            logging.critical("Error in Deletion during logOut %s", logout_records)
 
-    ## General Note:
-    """ Multiple signin by single user is possible. But due to this there will be huge dump of session info in db. 
-    Therefore a function can be triggered in db to delete the records in sesseion table per day basis. """
 
     def consumer(self):
-
-        """ This is a kafka consumer that consumes the events and sends to the corresponding event handlers"""
 
         consumer = KafkaConsumer(
             'authentication',
@@ -70,14 +69,9 @@ class AuthenticationConsumer:
             auto_offset_reset='earliest',
             enable_auto_commit=True,
             group_id='authentication-group'
-            # key_deserializer=lambda x: (x.decode('utf-8')),
-            # value_deserializer=lambda x: loads(x.decode('utf-8'))
+
         )
         for requests_or_records in consumer:
-            print("requests_or_records----------->", requests_or_records)
-
-            """ Based on the key the events are filtered and processed.
-             This would have been done by forming a new stream through stream processing using faust"""
 
             if self.keyDeserializer(requests_or_records.key) == self.sign_up: self.signUp(
                 self.valueDeserializer(requests_or_records.value))

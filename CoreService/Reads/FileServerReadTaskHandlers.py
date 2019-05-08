@@ -2,7 +2,7 @@ import base64
 import configparser
 import threading
 
-from CoreService import DataSourceFactory
+from CoreService import DataSourceFactory, logging
 from CoreService.Reads import FileAccessMetaDataApi, ThreadServices, FileStructureTransformer
 
 """ This class handles the tasks that the business needs from the file server or file storage. """
@@ -19,7 +19,8 @@ class FileServerReadTaskHandlers:
 
     def getLatestContents(self, username, bucketName):
 
-        """ This function handles the task of listing the latest files and folders """
+        logging.info("Inside getLatestContents")
+
         s3Connection = DataSourceFactory.DataSourceFactory().getS3Access()
         resultFromS3 = s3Connection.listObjects(bucketName)
         accesssDetailsForFilesAndFolders = FileAccessMetaDataApi.FileAccessMetaDataApi().fetchUserAcessDataForFilesandFolders()
@@ -27,16 +28,19 @@ class FileServerReadTaskHandlers:
                                                                                      accesssDetailsForFilesAndFolders)
         hierarchicalStructureForS3result = fileStructureTransformer.transformationProcessPipeline(resultFromS3)
 
-        print("hierarchicalStructureForS3result----------->", hierarchicalStructureForS3result)
-
         return hierarchicalStructureForS3result
 
     def pushTheDownloadedFileToCache(self, s3Data, selectedFileOrFolder, topicName):
+
+        logging.info("Inside pushTheDownloadedFileToCache")
+
         ThreadServices.ThreadServices().pushToCacheStream(s3Data, selectedFileOrFolder, topicName)
 
 
 
     def getFileOrFolder(self, selectedFileOrFolder, topicName):
+
+        logging.info("Inside getFileOrFolder")
 
         # topic name level scope is not implemented yet
 

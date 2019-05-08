@@ -1,7 +1,7 @@
 import configparser
 import threading
 
-from CoreService import DataSourceFactory
+from CoreService import DataSourceFactory, logging
 from CoreService.Writes import SavepointHandler, FileMetaDataApi, ThreadServices, FileStructureTransformer
 
 """ This class handles the tasks that the business needs from the file  server or file storage. """
@@ -30,6 +30,8 @@ class FileServerWriteTaskHandlers:
 
 
     def deleteFiles(self, owner, selectedFiles, topicName):
+
+        logging.info("Inside deleteFiles")
 
         """ This function handles the task of deleting the files in S3 """
 
@@ -62,11 +64,10 @@ class FileServerWriteTaskHandlers:
                     deleteSavepointThread.daemon = True
                     deleteSavepointThread.start()
                 except:
-                    print("Error unable to delete Savepoint")
+                    logging.warning("Error unable to delete Savepoint")
                 return ({"status": True})
             else:
-                print("inside Rollback for delete operation")
-
+                logging.info("Inside Rollback for delete operation")
                 try:
                     rollBackThread = threading.Thread(
                         target=self.__rollBackSavepointForDeleteOperationInBackground,
@@ -75,13 +76,13 @@ class FileServerWriteTaskHandlers:
                     rollBackThread.start()
                     return ({"status": False})
                 except:
-                    print("Error: unable to Rollback")
-
+                    logging.warning("Error unable to Rollback")
         else:
-            print("Error: unable to Create Savepoint")
+            logging.warning("Error unable to Create Savepoint")
             return ({"status": False})
 
     def __createAccessRecord(self, owner, eachFileToBeUploaded):
+
         accessRecord = {}
         accessRecord["owner"] = owner
         accessRecord["file"] = eachFileToBeUploaded["path"] + eachFileToBeUploaded["name"]
@@ -97,8 +98,6 @@ class FileServerWriteTaskHandlers:
 
     def __pushFilesToTheCache(self, eachFileToBeUploaded, topicName):
 
-        """ Thread to push uploaded file to cache stream """
-
         if (eachFileToBeUploaded["path"] == topicName):
             selectedFileOrFolder = eachFileToBeUploaded["name"]
         else:
@@ -110,9 +109,7 @@ class FileServerWriteTaskHandlers:
             thread.daemon = True
             thread.start()
         except:
-            print(
-                "{}------{}----{}".format('Warning', selectedFileOrFolder,
-                                          'Error in Pushing to the stream for Cache Insertion'))  # logger implementation
+            logging.critical("Error in Pushing to the stream for Cache Insertion %s", selectedFileOrFolder)
             return False
         return True
 
@@ -124,14 +121,20 @@ class FileServerWriteTaskHandlers:
             deleteSavepointThread.daemon = True
             deleteSavepointThread.start()
         except:
-            print("Error unable to delete Savepoint")
+            logging.warning("Error unable to delete Savepoint")
 
     def putTheUploadedFilesToCache(self, filesToBeUploaded, topicName):
+
+        logging.info("Inside putTheUploadedFilesToCache")
+
         cacheInsertionResults = [self.__pushFilesToTheCache(eachFileToBeUploaded, topicName) for
                                  eachFileToBeUploaded in filesToBeUploaded]
         return cacheInsertionResults
 
     def accessRecordCreationForEachUploadedFiles(self, owner, filesToBeUploaded):
+
+        logging.info("Inside accessRecordCreationForEachUploadedFiles")
+
         accessRecordsToBeInserted = [self.__createAccessRecord(owner, eachFileToBeUploaded) for
                                      eachFileToBeUploaded in filesToBeUploaded]
 
@@ -141,11 +144,16 @@ class FileServerWriteTaskHandlers:
         return accessRecordsInsertionResults
 
     def uploadFiles(self, filesToBeUploaded, topicName):
+
+        logging.info("Inside uploadFiles")
+
         versionIds = [self._s3Connection.uploadObject(eachFileToBeUploaded, topicName) for eachFileToBeUploaded in
                       filesToBeUploaded]
         return versionIds
 
     def uploadFilesToRootFolder(self, owner, filesToBeUploaded, topicName):
+
+        logging.info("Inside uploadFilesToRootFolder")
 
         versionIds = self.uploadFiles(filesToBeUploaded, topicName)
         if False not in versionIds:
@@ -153,18 +161,20 @@ class FileServerWriteTaskHandlers:
             if False not in accessRecordsInsertionResults:
                 cacheInsertionResults = self.putTheUploadedFilesToCache(filesToBeUploaded, topicName)
                 if False not in cacheInsertionResults:
-                    print("reached near return ")
                     return ({"status": True})
         else:
             return ({"status": False})
 
     def uploadFilesToDesignatedFolder(self, owner, filesToBeUploaded, topicName, selectedFolder):
 
+        logging.info("Inside uploadFilesToDesignatedFolder")
+
         if selectedFolder is None:
             return self.uploadFilesToRootFolder(owner, filesToBeUploaded, topicName)
         else:
             filesToCreateSavepointExtractedFromS3 = self._s3Connection.listObjectsForFolder(bucketName=topicName,
                                                                                             selectedFolder=selectedFolder)
+
             filesToCreateSavepoint = FileStructureTransformer.FileStructureTransformer().transformationProcessPipeline(
                 filesToCreateSavepointExtractedFromS3)
             savepointCreated = SavepointHandler.SavepointHandler().createSavepointForUploadOperation(topicName, owner,
@@ -190,7 +200,7 @@ class FileServerWriteTaskHandlers:
                         rollBackThread.daemon = True
                         rollBackThread.start()
                     except:
-                        print("Error: unable to Rollback")
+                        logging.warning("Error: unable to Rollback")
 
                     return ({"status": False})
             else:

@@ -3,10 +3,8 @@ class RequestToDatabaseObjectMapper:
     def RequestMappedAccessRequestObject(self, accessRequestObjectForMapping, accessRequestToBeMapped):
         accessRequestObjectForMapping.id = accessRequestObjectForMapping.query.count() + 1
         accessRequestObjectForMapping.file = accessRequestToBeMapped["path"]
-        # accessRequestObjectForMapping.userName = accessRequestToBeMapped["username"]
-        accessRequestObjectForMapping.userName = "ramu"
-        # accessRequestObjectForMapping.ownerOfFile = accessRequestToBeMapped["owner"]
-        accessRequestObjectForMapping.ownerOfFile = "ramu"
+        accessRequestObjectForMapping.userName = accessRequestToBeMapped["username"]
+        accessRequestObjectForMapping.ownerOfFile = accessRequestToBeMapped["owner"]
         accessRequestObjectForMapping.accessType = accessRequestToBeMapped["access"]
         accessRequestObjectForMapping.statusOfRequest = "ongoing"
         return accessRequestObjectForMapping

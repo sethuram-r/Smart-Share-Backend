@@ -4,7 +4,7 @@ import json
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 
-from AccessManagementService import ServiceInterface
+from AccessManagementService import ServiceInterface, logging
 
 app = Flask("Access Management Service")
 
@@ -37,7 +37,7 @@ def request_preparation(request, path):
 @app.route('/<path:path>', methods=['POST', 'GET'])
 def catch_all(path):
     transformed_request = request_preparation(request, path)
-    print("transformed_request-------------->", transformed_request)
+    logging.info("Transformed Request From Web %s", transformed_request)
     service = ServiceInterface.ServiceInterface(transformed_request, databaseInstance.Model, databaseInstance)
-    print("result---------------->", service.result)
+    logging.info("Response  %s", service.result)
     return jsonify(service.result)

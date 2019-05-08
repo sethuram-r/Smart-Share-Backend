@@ -1,4 +1,4 @@
-""" This class transforms the results from the data source to a hierarchical structure. """
+from CoreService import logging
 
 
 class FileStructureTransformer:
@@ -16,6 +16,9 @@ class FileStructureTransformer:
             return True
 
     def transformationProcessPipeline(self, s3ResultToBeTransformed):
+
+        logging.info("Inside transformationProcessPipeline")
+
         validInput = self._isInputValid(s3ResultToBeTransformed)
         if validInput == False:
             return None
@@ -24,4 +27,7 @@ class FileStructureTransformer:
             return filteredResult
 
     def extractFileNamesForSavepointCreationInDeleteOperation(self, selectedFiles):
+
+        logging.info("Inside extractFileNamesForSavepointCreationInDeleteOperation")
+
         return [eachselectedFile["Key"] for eachselectedFile in selectedFiles]

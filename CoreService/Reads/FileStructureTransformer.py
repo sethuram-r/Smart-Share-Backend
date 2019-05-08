@@ -1,6 +1,8 @@
 import pprint as pp
 import re
 
+from CoreService import logging
+
 """ This class transforms the results from the data source to a hierarchical structure. """
 
 
@@ -11,7 +13,9 @@ class FileStructureTransformer:
         self.bucketName = bucketName
         self.accessDetailsForFilesAndFolders = accesssDetailsForFilesAndFolders
 
-    def accessAssignmentToEachFileAndFolder(self, node, metadata):  # untested
+    def accessAssignmentToEachFileAndFolder(self, node, metadata):
+
+        logging.info("Inside accessAssignmentToEachFileAndFolder")
 
         node["owner"] = metadata["owner"]
         for user in metadata["accessingUsers"]:
@@ -23,12 +27,14 @@ class FileStructureTransformer:
 
     def findAccessDetailsForSpecificFileorFolder(self, neededFileOrFolder):
 
+        logging.info("Inside findAccessDetailsForSpecificFileorFolder")
 
         for eachFileorFolder in self.accessDetailsForFilesAndFolders:  # untested
             if eachFileorFolder["file"] == neededFileOrFolder:
                 return eachFileorFolder
 
-    def leaf_assignemnt(self, object):
+    def leafAssignemnt(self, object):
+
         temp = object["objectName"].split("/")
         del temp[-1]
         root_folder_name = "/".join(temp) + "/"
@@ -40,7 +46,7 @@ class FileStructureTransformer:
         if (metadata): temp = self.accessAssignmentToEachFileAndFolder(temp, metadata)
         return temp
 
-    def branch_assignment(self, original_name, name):
+    def branchAssignment(self, original_name, name):
         temp = {}
         temp["name"] = name
         temp["trueName"] = original_name
@@ -52,7 +58,7 @@ class FileStructureTransformer:
         if (metadata): temp = self.accessAssignmentToEachFileAndFolder(temp, metadata)
         return temp
 
-    def path_finder(self, start_position, folder):
+    def pathFinder(self, start_position, folder):
         if start_position["children"] == []:
             return start_position
         else:
@@ -76,6 +82,8 @@ class FileStructureTransformer:
 
     def dataStructureTransformerPipeline(self, filteredResult):
 
+        logging.info("Inside dataStructureTransformerPipeline")
+
         """ transforms the filtered s3 result"""
 
         transformedResult = {}
@@ -88,7 +96,7 @@ class FileStructureTransformer:
         file_extension = re.compile("([a-zA-Z0-9\s_\\.\-\(\):])+(\..*)$")
         for i in filteredResult["bucketData"]:
             if file_extension_regex.search(i["objectName"]) and "/" not in i["objectName"]:
-                transformedResult["children"].append(self.leaf_assignemnt(i))
+                transformedResult["children"].append(self.leafAssignemnt(i))
             elif i["objectName"].endswith('/') or file_extension.search(i["objectName"]):
                 if file_extension.search(i["objectName"]):
                     splitted_root = list(filter(None, i["objectName"].split("/")))
@@ -100,13 +108,13 @@ class FileStructureTransformer:
                     previous_split = self.longestSubstringFinder(previous_split, i["objectName"])
 
                 for each_split in splitted_root:
-                    start_position = self.path_finder(start_position, each_split)
+                    start_position = self.pathFinder(start_position, each_split)
                     if (start_position["name"]) == self.bucketName: previous_split = ""
                 if file_extension.search(i["objectName"]):
-                    start_position["children"].append(self.leaf_assignemnt(i))
+                    start_position["children"].append(self.leafAssignemnt(i))
                 else:
-                    start_position["children"].append(self.branch_assignment(i["objectName"],
-                                                                             i["objectName"].replace(previous_split, "",
+                    start_position["children"].append(self.branchAssignment(i["objectName"],
+                                                                            i["objectName"].replace(previous_split, "",
                                                                                                      1).replace(
                                                                                  "/", "").strip()))
                     previous_split = i["objectName"]
@@ -115,7 +123,7 @@ class FileStructureTransformer:
 
     def filterValidS3Result(self, validS3Result):
 
-        print("validS3Result------------>", validS3Result)  # no idea why and what is getting filtered
+        logging.info("Inside filterValidS3Result")
 
         filteredResult = {}
         filteredResult["bucketName"] = validS3Result["Name"]
@@ -138,14 +146,15 @@ class FileStructureTransformer:
 
     def checkInput(self, s3ResultToBeTransformed):
 
-        """ Function checks the validity of the s3 Result. """
-
         if "Contents" not in s3ResultToBeTransformed:
             return False
         else:
             return True
 
     def transformationProcessPipeline(self, s3ResultToBeTransformed):
+
+        logging.info("Inside transformationProcessPipeline")
+
         validInput = self.checkInput(s3ResultToBeTransformed)
         if validInput == False:
             return self.transformInvalidInput(self.bucketName)

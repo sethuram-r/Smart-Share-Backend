@@ -54,7 +54,6 @@ class ModelFactory:
         return accessRecord
 
     def accessDetailsToBeUpdatedForThatUser(self, existingAccess, accessToUpdate):
-        print("accessDetailsToBeUpdatedForThatUser")
         existingAccessInDictionaryFormat = existingAccess.__dict__
         if accessToUpdate in existingAccessInDictionaryFormat:
             existingAccessInDictionaryFormat[accessToUpdate] = True
@@ -82,18 +81,16 @@ class ModelFactory:
                                                                                        delete=accessDetails[
                                                                                            "delete"]).first().id
 
-                return accessingUsersOfGivenFileData  ### unsure
+                return accessingUsersOfGivenFileData
 
         accessDetails = self.accessDetailsFormatter(accessRequestToBeApproved["accessType"])
         FileUserAccessObject.accessId = PermissionsAssignedObject.query.filter_by(**accessDetails).first().id
         UserObject.name = userName
         FileUserAccessObject.user = UserObject
         accessingUsersOfGivenFileData.append(FileUserAccessObject)
-        print("accessingUsersOfGivenFileData-----", accessingUsersOfGivenFileData)
         return accessingUsersOfGivenFileData
 
     def getFilesObjectForspecificUser(self, ownerName):
-
         OwnerObject, FileObject, FileUserAccessObject, PermissionsAssignedObject, UserObject = self.getFileAndItsAccessingUsersModel()
         ownerDetails = OwnerObject.query.filter_by(name=ownerName).first()
         return FileObject.query.filter_by(ownerId=ownerDetails.id).all()

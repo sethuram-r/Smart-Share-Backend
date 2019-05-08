@@ -1,6 +1,8 @@
 import configparser
 import requests
 
+from CoreService import logging
+
 
 class FileAccessMetaDataApi:
 
@@ -11,5 +13,7 @@ class FileAccessMetaDataApi:
         self.__defaultTopicName = config['HELPERS']['DEFAULT_TOPIC_NAME']
 
     def fetchUserAcessDataForFilesandFolders(self):
-        response = requests.get(url=self.__accessDataUrl + "fetchUserAcessDataForFilesandFolders")
+        logging.info("Inside fetchUserAcessDataForFilesandFolders")
+
+        response = requests.get(url=self.__accessDataUrl + "fetchUserAcessDataForFilesAndFolders")
         return response.json()

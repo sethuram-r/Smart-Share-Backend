@@ -1,6 +1,8 @@
 import configparser
 import requests
 
+from CoreService import logging
+
 
 class FileMetaDataApi:
 
@@ -10,6 +12,8 @@ class FileMetaDataApi:
         self.__accessDataUrl = config['URL']['ACCESS_DATA_INFO_URL']
 
     def fetchUserAcessDataForSingleFileFromAccessManagementServer(self, selectedFile):
+        logging.info("Inside fetchUserAcessDataForSingleFileFromAccessManagementServer")
+
         parameter = {}
         parameter["file"] = selectedFile
         response = requests.get(url=self.__accessDataUrl + "fetchUserAcessDataForSingleFileOrFolder",
@@ -17,6 +21,8 @@ class FileMetaDataApi:
         return response
 
     def removeUserAccessDetailsForDeletedFiles(self, owner, deletedFiles):
+        logging.info("Inside removeUserAccessDetailsForDeletedFiles")
+
         DeletedFilesOfTheOwner = {}
         DeletedFilesOfTheOwner["owner"] = owner
         DeletedFilesOfTheOwner["files"] = deletedFiles
@@ -25,11 +31,15 @@ class FileMetaDataApi:
         return response.json()["status"]
 
     def addUserAccessDetailsForFileorFolderInUserAccessManagementServer(self, accessRecordsToBeInserted):
+        logging.info("Inside addUserAccessDetailsForFileorFolderInUserAccessManagementServer")
+
         response = requests.post(url=self.__accessDataUrl + "addUserAccessDetailForFile",
                                  json=accessRecordsToBeInserted)
         return response.json()["status"]
 
     def writeOrUpdateUserAccessData(self, accessRecord):
+        logging.info("Inside writeOrUpdateUserAccessData")
+
         accessRecordsToBeInserted = {}
         accessRecordsToBeInserted["file"] = accessRecord["file"]
         accessRecordsToBeInserted["owner"] = accessRecord["owner"]

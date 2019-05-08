@@ -3,6 +3,7 @@ from json import loads
 
 from kafka import KafkaConsumer
 
+from AccessManagementService import logging
 from AccessManagementService.PostgresCommunicator import PostgresWriteTaskHandler
 
 config = configparser.ConfigParser()
@@ -14,7 +15,7 @@ approveOrRejectAccessRequest = config['TASKS']['APPROVE_REJECT_ACCESS_REQUEST']
 
 
 def fileOwnerApproveOrRejectAccessRequest(accessRequestToBeApprovedOrRejected):
-    print("inside ---fileOwnerApproveOrRejectAccessRequest --- ")
+    logging.info("Consumer: Inside fileOwnerApproveOrRejectAccessRequest")
 
     if accessRequestToBeApprovedOrRejected["status"] == "approve":
         del accessRequestToBeApprovedOrRejected["status"]
@@ -27,10 +28,14 @@ def fileOwnerApproveOrRejectAccessRequest(accessRequestToBeApprovedOrRejected):
 
 
 def createAccessRequest(accessRequest):
+    logging.info("Consumer: Inside createAccessRequest")
+
     PostgresWriteTaskHandler.PostgresWriteTaskHandler().createAccessRequest(accessRequest)
 
 
 def deleteAccessRequestRecord(accessRequest):
+    logging.info("Consumer: Inside deleteAccessRequestRecord")
+
     PostgresWriteTaskHandler.PostgresWriteTaskHandler().deleteAccessRequestRecord(accessRequest)
 
 
@@ -44,7 +49,6 @@ def consumer():
         key_deserializer=lambda x: (x.decode('utf-8')),
         value_deserializer=lambda x: loads(x.decode('utf-8')))
     for requests_or_records in consumer:
-        print("requests_or_records----------->", requests_or_records)
 
         if requests_or_records.key == createAccessRequestKey: createAccessRequest(requests_or_records.value)
         if requests_or_records.key == deleteAccessRequestKey: deleteAccessRequestRecord(requests_or_records.value)

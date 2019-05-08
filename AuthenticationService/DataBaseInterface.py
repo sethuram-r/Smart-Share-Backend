@@ -1,6 +1,6 @@
 import configparser
 
-from AuthenticationService import MongoReads
+from AuthenticationService import MongoReads, logging
 
 """ This class is a common interface which gives flexibility to change or add other databases in future."""
 
@@ -14,12 +14,15 @@ class DataBaseInterface:
         self.session_validation_collection = config['MONGO']['SESSION_VALIDATION_COLLECTION']
 
     def findSignInRecordInDatabase(self, record):
-        """ This is used to access the database (MongoDB) to find one single sign in  record """
+        logging.info("Inside findSignInRecordInDatabase ")
+
         doesRecordExists = MongoReads.MongoReads().findOneRecord(record, self.registered_users_collection)
-        print("doesRecordExists------>", doesRecordExists)
+        logging.debug("Does Record Exists %s", doesRecordExists)
         return doesRecordExists
 
     def findSessionRecordInDatabase(self, record):
-        """ This is used to access the database (MongoDB) to find one single session record """
+        logging.info("Inside findSessionRecordInDatabase ")
+
         doesRecordExists = MongoReads.MongoReads().findOneRecord(record, self.session_validation_collection)
+        logging.debug("Does Record Exists %s", doesRecordExists)
         return doesRecordExists

@@ -1,5 +1,6 @@
 import configparser
 
+from CoreService import logging
 from CoreService.Reads import FileServerReadTaskHandlers
 
 """ This class is the core implementation of Business logic done through various task handlers."""
@@ -18,12 +19,16 @@ class ServiceImplementation:
 
     def displayCurrentFilesandFoldersForSelectedTopics(self):
 
+        logging.info("Inside displayCurrentFilesandFoldersForSelectedTopics")
+
         username = self.request["param"].get(self.username)
         topicName = self.request["param"].get(self.topicName)
         if topicName == None: topicName = self.defaultTopicName
         return FileServerReadTaskHandlers.FileServerReadTaskHandlers().getLatestContents(username, topicName)
 
     def downloadSelectedFileOrFolders(self):
+
+        logging.info("Inside downloadSelectedFileOrFolders")
 
         selectedFileOrFolder = self.request["param"].get(self.selectedFileOrFolder)
         topicName = self.request["param"].get(self.topicName)

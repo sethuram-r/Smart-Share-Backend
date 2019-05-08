@@ -4,6 +4,8 @@ from time import sleep
 
 from kafka import KafkaProducer
 
+from CoreService import logging
+
 """ This class contains tasks / functions which are handled by threads """
 
 
@@ -28,7 +30,6 @@ class ThreadServices:
 
         # Record Preparation Begins..
 
-
         data_to_placed_in_the_stream = {}
         data_to_placed_in_the_stream["content"] = self.convertBtyeToExactString(s3Data)
         data_to_placed_in_the_stream["key"] = selectedFileOrFolder
@@ -38,3 +39,7 @@ class ThreadServices:
 
         result = producer.send('cache', key=self._insertCacheTask, value=data_to_placed_in_the_stream)
         sleep(10)
+        if result.is_done:
+            logging.info("The record have been successfully pushed to the stream")
+        else:
+            logging.warning("Pushing to the stream have been failed")

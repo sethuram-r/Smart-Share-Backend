@@ -4,6 +4,8 @@ from time import sleep
 
 from kafka import KafkaProducer
 
+from CoreService import logging
+
 """ This class contains tasks / functions which are handled by threads """
 
 class ThreadServices:
@@ -18,7 +20,6 @@ class ThreadServices:
         return str(byteString).replace("b'", "", 1).replace("'", "").strip()
 
     def pushToCacheStream(self, s3Data, selectedFileOrFolder, topicName):
-        """ Function to submit the signup request to the kafka stream """
 
         producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
                                  key_serializer=lambda x: x.encode('utf-8'),
@@ -37,4 +38,4 @@ class ThreadServices:
         result = producer.send('cache', key=self._insertCacheTask, value=data_to_placed_in_the_stream)
         sleep(10)
         if (result.is_done):
-            print("successfully pushed to cache")
+            logging.info("successfully pushed to cache")
