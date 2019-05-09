@@ -5,39 +5,35 @@ from AccessManagementService.PostgresCommunicator import PostgresWriteTaskHandle
 
 
 class ApiImplmentation:
-    def __init__(self, request, modelInstance, databaseInstance):
+    def __init__(self, request):
         config = configparser.ConfigParser()
         config.read('AccessManagementConfig.ini')
         self.request = request
-        self.modelInstance = modelInstance
-        self.databaseInstance = databaseInstance
+        # self.modelInstance = modelInstance
+        # self.databaseInstance = databaseInstance
 
     def fetchUserAcessDataForFilesAndFolders(self):
         logging.info("Inside fetchUserAcessDataForFilesAndFolders")
 
-        return PostgresReadTaskHandler.PostgresReadTaskHandler(self.modelInstance,
-                                                               self.databaseInstance).fetchUserAcessDataForFilesandFoldersInDictionaryFormat()
+        return PostgresReadTaskHandler.PostgresReadTaskHandler().fetchUserAcessDataForFilesandFoldersInDictionaryFormat()
 
     def fetchUserAcessDataForSingleFileOrFolder(self):
         logging.info("Inside fetchUserAcessDataForSingleFileOrFolder")
 
         fileName = self.request["param"].get('file')
-        return PostgresReadTaskHandler.PostgresReadTaskHandler(self.modelInstance,
-                                                               self.databaseInstance).fetchUserAcessDataForSingleFileOrFolderInDictionaryFormat(
+        return PostgresReadTaskHandler.PostgresReadTaskHandler().fetchUserAcessDataForSingleFileOrFolderInDictionaryFormat(
             fileName)
 
     def removeUserAccessDetailsForDeletedFiles(self):
         logging.info("Inside removeUserAccessDetailsForDeletedFiles")
 
         accessRecordsToBeDeleted = self.request["data"]
-        return PostgresWriteTaskHandler.PostgresWriteTaskHandler(self.modelInstance,
-                                                                 self.databaseInstance).deleteAccessDetailForFiles(
+        return PostgresWriteTaskHandler.PostgresWriteTaskHandler().deleteAccessDetailForFiles(
             accessRecordsToBeDeleted["files"])
 
     def addUserAccessDetailForFile(self):
         logging.info("Inside addUserAccessDetailForFile")
 
         accessRecordToBeInserted = self.request["data"]
-        return PostgresWriteTaskHandler.PostgresWriteTaskHandler(self.modelInstance,
-                                                                 self.databaseInstance).createUserAccessDetailForFile(
+        return PostgresWriteTaskHandler.PostgresWriteTaskHandler().createUserAccessDetailForFile(
             accessRecordToBeInserted)

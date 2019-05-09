@@ -12,13 +12,13 @@ from AccessManagementService.PostgresCommunicator import PostgresReadTaskHandler
 
 class ServiceImplementation:
 
-    def __init__(self, request, modelInstance, databaseInstance):
-        super().__init__(request, modelInstance, databaseInstance)
+    def __init__(self, request):
+        super().__init__(request)
         config = configparser.ConfigParser()
         config.read('AccessManagementConfig.ini')
         self.request = request
-        self.modelInstance = modelInstance
-        self.databaseInstance = databaseInstance
+        # self.modelInstance = modelInstance
+        # self.databaseInstance = databaseInstance
         self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'], key_serializer=lambda x: x.encode('utf-8'),
                                       value_serializer=lambda x:
                                       dumps(x).encode('utf-8'))
@@ -71,8 +71,7 @@ class ServiceImplementation:
         logging.info("Inside getListOfUsersAccessingOwnersFiles")
 
         ownerName = self.request["param"].get('username')
-        return PostgresReadTaskHandler.PostgresReadTaskHandler(self.modelInstance,
-                                                               self.databaseInstance).getFilesInformationForSpecificUser(
+        return PostgresReadTaskHandler.PostgresReadTaskHandler().getFilesInformationForSpecificUser(
             ownerName)
 
     def getAccessRequestsCreatedByUser(self):
@@ -80,8 +79,7 @@ class ServiceImplementation:
         logging.info("Inside getAccessRequestsCreatedByUser")
 
         username = self.request["param"].get('username')
-        return PostgresReadTaskHandler.PostgresReadTaskHandler(self.modelInstance,
-                                                               self.databaseInstance).getAccessRequestsCreatedByTheUser(
+        return PostgresReadTaskHandler.PostgresReadTaskHandler().getAccessRequestsCreatedByTheUser(
             username)
 
     def getAccessRequestsToBeApprovedByOwnerOfTheFile(self):
@@ -89,6 +87,5 @@ class ServiceImplementation:
         logging.info("Inside getAccessRequestsToBeApprovedByOwnerOfTheFile")
 
         ownerName = self.request["param"].get('owner')
-        return PostgresReadTaskHandler.PostgresReadTaskHandler(self.modelInstance,
-                                                               self.databaseInstance).getAccessRequestsForOwnerToApproval(
+        return PostgresReadTaskHandler.PostgresReadTaskHandler().getAccessRequestsForOwnerToApproval(
             ownerName)

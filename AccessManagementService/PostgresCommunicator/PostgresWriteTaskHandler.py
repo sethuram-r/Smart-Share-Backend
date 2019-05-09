@@ -5,10 +5,6 @@ from AccessManagementService.PostgresCommunicator.RequestToObjectMappers import 
 
 class PostgresWriteTaskHandler:
 
-    def __init__(self, modelInstance=None, databseInstance=None):
-        self.modelInstance = modelInstance
-        self.databseInstance = databseInstance
-
     def createAccessRequest(self, accessRequest):
 
         logging.info("Inside createAccessRequest")
@@ -92,8 +88,7 @@ class PostgresWriteTaskHandler:
 
         resultOfDeleteOperation = []
         for eachFile in FilesForCorrespondingAccessRecordsToBeDeleted:
-            fileObject = ModelFactory.ModelFactory(self.modelInstance,
-                                                   self.databseInstance).getAccessDetailOfFile(eachFile["Key"])
+            fileObject = ModelFactory.ModelFactory().getAccessDetailOfFile(eachFile["Key"])
             try:
                 databaseInstance.session.delete(fileObject)
                 databaseInstance.session.commit()
@@ -113,8 +108,7 @@ class PostgresWriteTaskHandler:
         logging.info("Inside createUserAccessDetailForFile")
 
         numberOfAccessingUsers = len(accessDetailsToBeInserted["accessing_users"])
-        newFileObject = ModelFactory.ModelFactory(self.modelInstance,
-                                                  self.databseInstance).getFileAndItsAccessingUsersObjectForNonExistingFile(
+        newFileObject = ModelFactory.ModelFactory().getFileAndItsAccessingUsersObjectForNonExistingFile(
             numberOfAccessingUsers)
 
         mappedNewFileObject = RequestToDatabaseObjectMapper.RequestToDatabaseObjectMapper().userAccessDetailToCorrespondingObect(

@@ -3,9 +3,6 @@ from AccessManagementService.PostgresCommunicator.Models import ModelFactory
 
 
 class PostgresReadTaskHandler:
-    def __init__(self, modelInstance, databseInstance):
-        self.modelInstance = modelInstance
-        self.databseInstance = databseInstance
 
     def accessDetailsForParticularFileUserFormatter(self, AccessDetailsForFile, fileUserRecord):
 
@@ -21,7 +18,7 @@ class PostgresReadTaskHandler:
 
         logging.info("Inside getFilesInformationForSpecificUser")
 
-        fileObjects = ModelFactory.ModelFactory(self.modelInstance, self.databseInstance).getFilesObjectForspecificUser(
+        fileObjects = ModelFactory.ModelFactory().getFilesObjectForspecificUser(
             ownerName)
         filesOfTheUserAccessesByOthers = []
         for eachFileObject in fileObjects:
@@ -50,8 +47,7 @@ class PostgresReadTaskHandler:
 
         logging.info("Inside getAccessRequestsCreatedByTheUser")
 
-        accessRequestsOfTheUserList = ModelFactory.ModelFactory(self.modelInstance,
-                                                                self.databseInstance).getAccessRequestsOfTheUser(
+        accessRequestsOfTheUserList = ModelFactory.ModelFactory().getAccessRequestsOfTheUser(
             userName)
         return self.accessRequestsListFormatter(accessRequestsOfTheUserList)
 
@@ -59,8 +55,7 @@ class PostgresReadTaskHandler:
 
         logging.info("Inside getAccessRequestsForOwnerToApproval")
 
-        accessRequestsOfTheOwnerList = ModelFactory.ModelFactory(self.modelInstance,
-                                                                 self.databseInstance).getAccessRequestsOfTheOwner(
+        accessRequestsOfTheOwnerList = ModelFactory.ModelFactory().getAccessRequestsOfTheOwner(
             ownerName)
         return self.accessRequestsListFormatter(accessRequestsOfTheOwnerList)
 
@@ -68,8 +63,7 @@ class PostgresReadTaskHandler:
 
         logging.info("Inside getOwnerDetailsForFile")
 
-        return ModelFactory.ModelFactory(self.modelInstance,
-                                         self.databseInstance).getOwnerDetails(ownerId).__dict__["name"]
+        return ModelFactory.ModelFactory().getOwnerDetails(ownerId).__dict__["name"]
 
     def fileObjectsFormatToDictionaries(self, listOfFileObjects):
 
@@ -95,8 +89,7 @@ class PostgresReadTaskHandler:
 
         logging.info("Inside fetchUserAcessDataForFilesandFoldersInDictionaryFormat")
 
-        listOfFileObjects = ModelFactory.ModelFactory(self.modelInstance,
-                                                      self.databseInstance).listAllFileAccessDetails()
+        listOfFileObjects = ModelFactory.ModelFactory().listAllFileAccessDetails()
         listOfFileObjectsInDictionaryFormat = self.fileObjectsFormatToDictionaries(listOfFileObjects)
         return listOfFileObjectsInDictionaryFormat
 
@@ -121,8 +114,7 @@ class PostgresReadTaskHandler:
 
         logging.info("Inside fetchUserAcessDataForSingleFileOrFolderInDictionaryFormat")
 
-        fileObject = ModelFactory.ModelFactory(self.modelInstance,
-                                               self.databseInstance).getAccessDetailOfFile(fileName)
+        fileObject = ModelFactory.ModelFactory().getAccessDetailOfFile(fileName)
         fileObjectInDictionaryFormat = self.fileObjectFormatToDictionary(fileObject)
 
         return fileObjectInDictionaryFormat

@@ -3,9 +3,7 @@ from AccessManagementService.PostgresCommunicator.Models import ObjectRelational
 
 class ModelFactory:
 
-    def __init__(self, model=None, db=None):
-        self.model = model
-        self.db = db
+    def __init__(self):
         self.objectRelationalModel = ObjectRelationalModel.ObjectRelationalModel()
 
     def getAccessRequestObject(self):
@@ -72,15 +70,12 @@ class ModelFactory:
 
         for eachFileUserAssoc in accessingUsersOfGivenFileData.users:
             if eachFileUserAssoc.user.name == userName:
-                print(eachFileUserAssoc.accessGiven)
-                print(accessRequestToBeApproved["accessType"])
                 accessDetails = self.accessDetailsToBeUpdatedForThatUser(eachFileUserAssoc.accessGiven,
                                                                          accessRequestToBeApproved["accessType"])
                 eachFileUserAssoc.accessId = PermissionsAssignedObject.query.filter_by(read=accessDetails["read"],
                                                                                        write=accessDetails["write"],
                                                                                        delete=accessDetails[
                                                                                            "delete"]).first().id
-
                 return accessingUsersOfGivenFileData
 
         accessDetails = self.accessDetailsFormatter(accessRequestToBeApproved["accessType"])

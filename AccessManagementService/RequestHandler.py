@@ -1,18 +1,14 @@
 import configparser
 import json
 
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
+from flask import request, jsonify
 
-from AccessManagementService import ServiceInterface, logging
+from AccessManagementService import ServiceInterface, logging, databaseInstance, app
 
-app = Flask("Access Management Service")
-
+databaseInstance.init_app(app)
 config = configparser.ConfigParser()
 config.read('AccessManagementConfig.ini')
-app.config['SQLALCHEMY_DATABASE_URI'] = config['POSTGRES']['SQLALCHEMY_DATABASE_URI']
-databaseInstance = SQLAlchemy(app)
-databaseInstance.metadata.schema = config['POSTGRES']['SCHEMA']
+
 
 
 def request_preparation(request, path):
@@ -37,6 +33,6 @@ def request_preparation(request, path):
 def catch_all(path):
     transformed_request = request_preparation(request, path)
     logging.info("Transformed Request From Web %s", transformed_request)
-    service = ServiceInterface.ServiceInterface(transformed_request, databaseInstance.Model, databaseInstance)
+    service = ServiceInterface.ServiceInterface(transformed_request)
     logging.info("Response  %s", service.result)
     return jsonify(service.result)
