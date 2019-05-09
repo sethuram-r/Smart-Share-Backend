@@ -14,4 +14,4 @@ databaseInstance = SQLAlchemy(app)
 databaseInstance.metadata.schema = config['POSTGRES']['SCHEMA']
 
 logging.basicConfig(format='%(levelname)s: %(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.DEBUG)
+                    level=logging.INFO)
