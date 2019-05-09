@@ -24,7 +24,6 @@ def request_preparation(request, path):
         for i in request.args.keys():
             parameters[i] = request.args.get(i)
 
-        print("args", parameters)
         temp["param"] = parameters
         temp["task"] = path
     else:

@@ -87,7 +87,7 @@ class ModelFactory:
         FileUserAccessObject.accessId = PermissionsAssignedObject.query.filter_by(**accessDetails).first().id
         UserObject.name = userName
         FileUserAccessObject.user = UserObject
-        accessingUsersOfGivenFileData.append(FileUserAccessObject)
+        accessingUsersOfGivenFileData.users.append(FileUserAccessObject)
         return accessingUsersOfGivenFileData
 
     def getFilesObjectForspecificUser(self, ownerName):

@@ -60,7 +60,7 @@ class PostgresReadTaskHandler:
         logging.info("Inside getAccessRequestsForOwnerToApproval")
 
         accessRequestsOfTheOwnerList = ModelFactory.ModelFactory(self.modelInstance,
-                                                                 self.databseInstance).getAccessRequestsOfTheUser(
+                                                                 self.databseInstance).getAccessRequestsOfTheOwner(
             ownerName)
         return self.accessRequestsListFormatter(accessRequestsOfTheOwnerList)
 

@@ -17,7 +17,7 @@ class RedisLock:
         self._redisClient = redis.Redis(host=hostName, port=port, db=db)
 
     def insertLock(self, key):
-        response = self._redisClient.set("lock:" + key, "No", ex=150)
+        response = self._redisClient.set("lock:" + key, "No", ex=60)
         return response
 
     def releaseLock(self, key):

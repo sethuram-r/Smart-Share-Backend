@@ -53,7 +53,7 @@ class FileServerReadTaskHandlers:
 
         if redisConnection.exists(keyToBeSearched) == 1:
             dataFromCache = redisConnection.getObject(keyToBeSearched)
-            print("returned from cache")
+            logging.info("<=============== Returned from Cache ===============>")
             return dataFromCache
         else:
             s3Connection = DataSourceFactory.DataSourceFactory().getS3Access()
@@ -68,6 +68,6 @@ class FileServerReadTaskHandlers:
                     thread.daemon = True
                     thread.start()
                 except:
-                    print("Error: unable to push into Cache Stream")
-            print("returned from s3")
+                    logging.critical("Unable to push into Cache Stream")
+            logging.info("<=============== Returned from S3 ===============>")
             return dataFromS3InBase64EncodedFromat

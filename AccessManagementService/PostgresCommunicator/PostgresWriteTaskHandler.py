@@ -39,7 +39,6 @@ class PostgresWriteTaskHandler:
             logging.warning("Access Request has not been successfully added to the existing file")
 
 
-
     def approveAccessRequest(self, accessRequestToBeApproved):
 
         logging.info("Inside approveAccessRequest")
