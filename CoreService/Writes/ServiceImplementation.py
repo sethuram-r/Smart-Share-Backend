@@ -1,7 +1,8 @@
 import configparser
+import threading
 
 from CoreService import logging
-from CoreService.Writes import FileServerWriteTaskHandlers
+from CoreService.Writes import FileServerWriteTaskHandlers, ThreadServices
 
 """ This class is the core implementation of Business logic done through various task handlers."""
 
@@ -17,6 +18,8 @@ class ServiceImplementation:
         self.selectedFileOrFolder = config['HELPERS']['SELECTED_FILE_OR_FOLDER']
         self.request = request
 
+    def _initiateUploading(self, owner, filesToBeUploaded, topicName, selectedFolder):
+        ThreadServices.ThreadServices().initiateUploadingProcess(owner, filesToBeUploaded, topicName, selectedFolder)
 
     def deleteSelectedFileOrFolders(self):
         logging.info("Inside deleteSelectedFileOrFolders")
@@ -35,7 +38,12 @@ class ServiceImplementation:
         filesToBeUploaded = dataToBeUploaded["data"]
         selectedFolder = dataToBeUploaded["selectedFolder"]
         topicName = self.defaultTopicName
-        uploadResult = FileServerWriteTaskHandlers.FileServerWriteTaskHandlers().uploadFilesToDesignatedFolder(owner,
-                                                                                                               filesToBeUploaded,
-                                                                                     topicName, selectedFolder)
-        return uploadResult
+        try:
+            uploadInitializationThread = threading.Thread(target=self._initiateUploading,
+                                                          args=(owner, filesToBeUploaded, topicName, selectedFolder,))
+            uploadInitializationThread.daemon = True
+            uploadInitializationThread.start()
+            return ({"status": True})
+        except:
+            logging.warning("Error unable to delete Savepoint")
+            return ({"status": False})

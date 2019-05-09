@@ -24,7 +24,7 @@ class FileServerWriteTaskHandlers:
     def __rollBackSavepointForUploadOperationInBackground(self, topicName, selectedFiles):
         SavepointHandler.SavepointHandler().rollbackForUploadOperation(topicName, selectedFiles)
 
-    def __pushFilesToCache(self, eachFileToBeUploaded, selectedFileOrFolder, topicName):
+    def _pushFileToCache(self, eachFileToBeUploaded, selectedFileOrFolder, topicName):
         ThreadServices.ThreadServices().pushToCacheStream(eachFileToBeUploaded, selectedFileOrFolder, topicName)
 
 
@@ -98,13 +98,15 @@ class FileServerWriteTaskHandlers:
 
     def __pushFilesToTheCache(self, eachFileToBeUploaded, topicName):
 
+        logging.info(" Thread: Inside __pushFilesToTheCache")
+
         if (eachFileToBeUploaded["path"] == topicName):
             selectedFileOrFolder = eachFileToBeUploaded["name"]
         else:
             selectedFileOrFolder = eachFileToBeUploaded["path"] + eachFileToBeUploaded["name"]
 
         try:
-            thread = threading.Thread(target=self.__pushFilesToCache,
+            thread = threading.Thread(target=self._pushFileToCache,
                                       args=(eachFileToBeUploaded["file"], selectedFileOrFolder, topicName,))
             thread.daemon = True
             thread.start()
@@ -161,9 +163,9 @@ class FileServerWriteTaskHandlers:
             if False not in accessRecordsInsertionResults:
                 cacheInsertionResults = self.putTheUploadedFilesToCache(filesToBeUploaded, topicName)
                 if False not in cacheInsertionResults:
-                    return ({"status": True})
+                    logging.info("Cache Insertion is successful")
         else:
-            return ({"status": False})
+            logging.critical("Uploading to S3 Failed")
 
     def uploadFilesToDesignatedFolder(self, owner, filesToBeUploaded, topicName, selectedFolder):
 
@@ -174,7 +176,6 @@ class FileServerWriteTaskHandlers:
         else:
             filesToCreateSavepointExtractedFromS3 = self._s3Connection.listObjectsForFolder(bucketName=topicName,
                                                                                             selectedFolder=selectedFolder)
-
             filesToCreateSavepoint = FileStructureTransformer.FileStructureTransformer().transformationProcessPipeline(
                 filesToCreateSavepointExtractedFromS3)
             savepointCreated = SavepointHandler.SavepointHandler().createSavepointForUploadOperation(topicName, owner,
@@ -189,9 +190,10 @@ class FileServerWriteTaskHandlers:
                     if False not in accessRecordsInsertionResults:
 
                         cacheInsertionResults = self.putTheUploadedFilesToCache(filesToBeUploaded, topicName)
+
                         if False not in cacheInsertionResults:  # this condition might not be needed can assume that this will always happen
                             self._deleteTheCreatedSavepoint(filesToCreateSavepoint)
-                            return ({"status": True})
+                            logging.info("Cache Insertion is successful")
                 else:
                     try:
                         rollBackThread = threading.Thread(
@@ -202,6 +204,6 @@ class FileServerWriteTaskHandlers:
                     except:
                         logging.warning("Error: unable to Rollback")
 
-                    return ({"status": False})
+                    logging.critical("Uploading to S3 Failed")
             else:
-                return ({"status": False})
+                logging.warning("Savepoint Creation Failed")

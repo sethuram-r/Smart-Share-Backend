@@ -5,6 +5,7 @@ from time import sleep
 from kafka import KafkaProducer
 
 from CoreService import logging
+from CoreService.Writes import FileServerWriteTaskHandlers
 
 """ This class contains tasks / functions which are handled by threads """
 
@@ -39,3 +40,9 @@ class ThreadServices:
         sleep(10)
         if (result.is_done):
             logging.info("successfully pushed to cache")
+
+    def initiateUploadingProcess(self, owner, filesToBeUploaded, topicName, selectedFolder):
+        FileServerWriteTaskHandlers.FileServerWriteTaskHandlers().uploadFilesToDesignatedFolder(owner,
+                                                                                                filesToBeUploaded,
+                                                                                                topicName,
+                                                                                                selectedFolder)
