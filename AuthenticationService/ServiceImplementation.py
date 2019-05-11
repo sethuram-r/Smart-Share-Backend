@@ -65,7 +65,8 @@ class ServiceImplementation:
         loginCredentialsToBeVerified = self.request["data"]
         login_credentials_verification_status = DataBaseInterface.DataBaseInterface().findSignInRecordInDatabase(
             loginCredentialsToBeVerified)
-        if (login_credentials_verification_status) != "":
+
+        if (login_credentials_verification_status) is not None:
             randomKey = self.generateRandomKey()
 
             # record preparation for producing kafka event begins
@@ -101,7 +102,7 @@ class ServiceImplementation:
         usersSessionDetailsToVerify = self.request["param"]
         usersSessionDetailsVerificationStatus = DataBaseInterface.DataBaseInterface().findSessionRecordInDatabase(
             usersSessionDetailsToVerify)
-        if (usersSessionDetailsVerificationStatus) != "":
+        if (usersSessionDetailsVerificationStatus) is not None:
             logging.debug("Valid Session Details")
             return {"status": True}
         else:

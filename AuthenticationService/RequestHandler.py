@@ -16,7 +16,6 @@ def request_preparation(request, path):
         for i in request.args.keys():
             parameters[i] = request.args.get(i)
 
-        print("args", parameters)
         temp["param"] = parameters
         temp["task"] = path
     else:
@@ -28,6 +27,7 @@ def request_preparation(request, path):
 
 @app.route('/<path:path>', methods=['POST', 'GET'])
 def catch_all(path):
+
     transformed_request = request_preparation(request, path)
     logging.info("Transformed Request From Web %s", transformed_request)
     service = ServiceInterface.ServiceInterface(transformed_request)
