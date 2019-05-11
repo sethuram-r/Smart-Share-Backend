@@ -1,7 +1,7 @@
 import configparser
 import json
 
-from flask import request, jsonify
+from flask import Flask, request, jsonify
 
 from AccessManagementService import ServiceInterface, logging, databaseInstance, app
 
@@ -36,3 +36,7 @@ def catch_all(path):
     service = ServiceInterface.ServiceInterface(transformed_request)
     logging.info("Response  %s", service.result)
     return jsonify(service.result)
+
+
+if __name__ == '__main__':
+    Flask.run(app, port=5005)
