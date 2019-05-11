@@ -36,8 +36,8 @@ class ThreadServices:
 
         # Record Preparation Ends...
 
-        result = producer.send('cache', key=self._insertCacheTask, value=data_to_placed_in_the_stream)
-        sleep(10)
+        result = producer.send('redis-cache', key=self._insertCacheTask, value=data_to_placed_in_the_stream)
+        sleep(5)
         if (result.is_done):
             logging.info("successfully pushed to cache")
 

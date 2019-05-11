@@ -1,6 +1,5 @@
 import configparser
 import re
-from ast import literal_eval as eval
 
 from CoreService import DataSourceFactory, logging
 from CoreService.Writes import FileMetaDataApi, OtherApiCallsForDifferentServers
@@ -35,103 +34,53 @@ class SavepointHandler:
 
         logging.info("Inside createSavepointForUploadOperation")
 
-        insertionResults = []
+        filesCreatedAtSavepointDuringUploadOperation = []
         for selectedFile in selectedFiles:
-            # Savepoint Creation for each file begins....
-
-            # Step -1 :  Gather User  file content for corresponding file through rest call
-
             file = self.__createSavepointDataFromS3ForEachFile(topicName, selectedFile)
+            filesCreatedAtSavepointDuringUploadOperation.append(file)
 
-            # Savepoint insertion begins...
+        return filesCreatedAtSavepointDuringUploadOperation
 
-            insertionResult = self._redisConnection.createSavepoint(**file)
-            insertionResults.append(insertionResult)
-        if False in insertionResults:
-            return False
-        else:
-            return True
 
     def createSavepointForDeleteOperation(self, owner, selectedFiles):
 
         logging.info("Inside createSavepointForDeleteOperation")
 
-        insertionResults = []
+        filesCreatedAtSavepointDuringDeleteOperation = []
         for selectedFile in selectedFiles:
-            # Savepoint Creation for each file begins....
-
-            # Step -1 :  Gather User access data and file content for corresponding file through rest call
 
             file = self.__createSavepointDataFromS3ForEachFile(self.defaultTopicName, selectedFile)
             file["data"]["access"] = self._fileMetaDataApi.fetchUserAcessDataForSingleFileFromAccessManagementServer(
                 selectedFile)
-            # Step - 2 Insert the file details to Transaction Database
+            filesCreatedAtSavepointDuringDeleteOperation.append(file)
 
-            # Savepoint insertion begins...
+        return filesCreatedAtSavepointDuringDeleteOperation
 
-            insertionResult = self._redisConnection.createSavepoint(**file)
-            insertionResults.append(insertionResult)
-        if False in insertionResults:
-            return False
-        else:
-            return True
-
-    def deleteSavepoint(self, selectedFiles):
-
-        logging.info("Inside deleteSavepoint")
-
-        deletionResult = [self._redisConnection.deleteSavepoint(selectedFile) for selectedFile in
-                          selectedFiles]
-        return deletionResult
 
     def rollbackForUploadOperation(self, topicName, filesPresentInTheSavepoint):
 
         logging.info("Inside rollbackForUploadOperation")
 
-        for eachFilesPresentInTheSavepoint in filesPresentInTheSavepoint:
-            eachBackupFileWithData = self._redisConnection.getDataForTheFile(eachFilesPresentInTheSavepoint,
-                                                                             mapping='data')
+        for eachFilePresentInTheSavepoint in filesPresentInTheSavepoint:
             uploadResult = self._otherApiCallsForDifferentServers.writeOrUpdateSavepointInS3(topicName,
-                                                                                             eachBackupFileWithData[
+                                                                                             eachFilePresentInTheSavepoint[
                                                                                                  "key"],
-                                                                                             eachBackupFileWithData[
+                                                                                             eachFilePresentInTheSavepoint[
                                                                                                  "data"]["content"])
             if uploadResult == False:
-                logging.warning('Error in Rollback for Upload Operation %s', eachBackupFileWithData)
+                logging.warning('Error in Rollback for Upload Operation %s', eachFilePresentInTheSavepoint)
 
-    def decodeValuesToString(self, value):
-        return value.decode('utf8')
-
-    def convertEachBackupFileWithDataToDictionary(self, eachBackupFileWithData):
-        utfDecodedEachBackupFileWithData = self.decodeValuesToString(eachBackupFileWithData)
-        return eval(utfDecodedEachBackupFileWithData)
-
-
-
-    def rollBackforDeleteOperation(self, topicName, selectedFiles):
+    def rollBackforDeleteOperation(self, topicName, filesPresentInTheSavepoint):
 
         logging.info("Inside rollBackforDeleteOperation")
 
-        getAllBackupFilesForSelectedFolder = self._redisConnection.getKeysWithPattern(
-            pattern="backup:" + selectedFiles[0]["Key"] + "*")
-
-        for eachBackupFile in getAllBackupFilesForSelectedFolder:
-            eachBackupFileKeyWithoutBackupWordInIt = self.decodeValuesToString(eachBackupFile).replace("backup:",
-                                                                                                       "").strip()
-            eachBackupFileWithData = self._redisConnection.getDataForTheFile(eachBackupFile, mapping='data')
-            eachBackupFileWithDataInDictonaryFormat = self.convertEachBackupFileWithDataToDictionary(
-                eachBackupFileWithData)
-
-            # step-2 put the S3 data back
+        for eachBackupFile in filesPresentInTheSavepoint:
 
             uploadResult = self._otherApiCallsForDifferentServers.writeOrUpdateSavepointInS3(topicName,
-                                                                                             eachBackupFileKeyWithoutBackupWordInIt,
-                                                                                             eachBackupFileWithDataInDictonaryFormat
+                                                                                             eachBackupFile["key"],
+                                                                                             eachBackupFile["data"]
                                                                                              ["content"])
-            # step-1 put the access data back
-
             insertOrUpdateResult = self._fileMetaDataApi.writeOrUpdateUserAccessData(
-                eachBackupFileWithDataInDictonaryFormat["access"])
-
+                eachBackupFile["data"]["access"])
             if insertOrUpdateResult and uploadResult == False:
                 logging.warning('Error in Rollback for Delete Operation %s', eachBackupFile)

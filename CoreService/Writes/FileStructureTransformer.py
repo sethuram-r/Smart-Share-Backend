@@ -26,8 +26,19 @@ class FileStructureTransformer:
             filteredResult = self._filterValidS3Result(s3ResultToBeTransformed)
             return filteredResult
 
-    def extractFileNamesForSavepointCreationInDeleteOperation(self, selectedFiles):
+    def extractFileNamesForDeleteOperation(self, selectedFiles):
 
         logging.info("Inside extractFileNamesForSavepointCreationInDeleteOperation")
 
         return [eachselectedFile["Key"] for eachselectedFile in selectedFiles]
+
+    def extractFolderNameForSavepointCreationInDeleteOperation(self, filesToBeDeleted):
+        if len(filesToBeDeleted) == 1:
+            fileToBeDeleted = filesToBeDeleted[0]
+            fileToBeDeleted = fileToBeDeleted.split("/")
+            del fileToBeDeleted[len(fileToBeDeleted) - 1]
+            folderName = "/".join(fileToBeDeleted)
+            return folderName
+        else:
+            rootFolder = filesToBeDeleted[0]
+            return rootFolder

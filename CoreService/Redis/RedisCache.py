@@ -25,6 +25,12 @@ class RedisCache:
     def insertObject(self, key, data):
         row = {"content": data, "timestamp": "{:%Y-%b-%d %H:%M:%S}".format(datetime.datetime.now())}
         insertionResult = self._redisClient.hmset("cache:" + key, row)
-        settingExpiryResult = self._redisClient.expire("cache:" + key, 150)
+        settingExpiryResult = self._redisClient.expire("cache:" + key, 300)
         result = 0 if (insertionResult == True and settingExpiryResult == True) else 1
         return result
+
+    def displayAllKeys(self):
+        return self._redisClient.keys()
+
+    def deleteAllKeys(self):
+        return self._redisClient.flushall()
