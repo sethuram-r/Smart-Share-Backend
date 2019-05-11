@@ -5,51 +5,40 @@ from kafka import KafkaConsumer
 
 from CoreService import DataSourceFactory, logging
 
-
-class CacheConsumer:
-
-    def __init__(self):
-        config = configparser.ConfigParser()
-        config.read('CoreConfig.ini')
-        self._insertCacheTask = config['TASKS']['INSERT_CACHE']
-        self._redisRole = config['HELPERS']['REDIS_CACHE']
-        self.consumer()
-
-    def insertIntoCache(self, recordsToBeInserted):
-
-        logging.info("Consumer: Inside insertIntoCache")
-
-        redisConnection = DataSourceFactory.DataSourceFactory().getRedisAccess(role=self._redisRole)
-
-        # Key preparation for Redis begins....
-
-        keyToBeInserted = recordsToBeInserted["bucket"] + '/' + recordsToBeInserted["key"]
-
-        # Key preparation for Redis ends....
-
-        insertionResult = redisConnection.insertObject(keyToBeInserted, recordsToBeInserted["content"])
-        if insertionResult == 1:
-            logging.info("Error in Cache Insertion %s", recordsToBeInserted)
-
-    def keyDeserializer(self, key):
-        return key.decode('utf-8')
-
-    def valueDeserializer(self, value):
-        return loads(value.decode('utf-8'))
-
-    def consumer(self):
-
-        consumer = KafkaConsumer(
-            'cache',
-            bootstrap_servers=['localhost:9092'],
-            auto_offset_reset='earliest',
-            enable_auto_commit=True,
-            group_id='core-group'
-
-        )
-        for records in consumer:
-            if self.keyDeserializer(records.key) == self._insertCacheTask: self.insertIntoCache(
-                self.valueDeserializer(records.value))
+config = configparser.ConfigParser()
+config.read('CoreConfig.ini')
+_insertCacheTask = config['TASKS']['INSERT_CACHE']
+_redisRole = config['HELPERS']['REDIS_CACHE']
 
 
-CacheConsumer()
+def _insertIntoCache(recordsToBeInserted):
+    logging.info("Consumer: Inside insertIntoCache")
+
+    redisConnection = DataSourceFactory.DataSourceFactory().getRedisAccess(role=_redisRole)
+
+    keyToBeInserted = recordsToBeInserted["bucket"] + '/' + recordsToBeInserted["key"]
+
+    print("keyToBeInserted------->", keyToBeInserted)
+
+    insertionResult = redisConnection.insertObject(keyToBeInserted, recordsToBeInserted["content"])
+    if insertionResult == 1:
+        logging.info("Error in Cache Insertion %s", recordsToBeInserted)
+
+
+def consumer():
+    consumer = KafkaConsumer(
+        'redis-cache',
+        bootstrap_servers=['localhost:9092'],
+        auto_offset_reset='latest',
+        enable_auto_commit=True,
+        group_id='cache-writer',
+        key_deserializer=lambda x: (x.decode('utf-8')),
+        value_deserializer=lambda x: loads(x.decode('utf-8')))
+
+    for record in consumer:
+        print(record.value)
+
+        if record.key == _insertCacheTask: _insertIntoCache(record.value)
+
+
+consumer()

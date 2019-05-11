@@ -48,6 +48,7 @@ def consumer():
         group_id='access-management-group',
         key_deserializer=lambda x: (x.decode('utf-8')),
         value_deserializer=lambda x: loads(x.decode('utf-8')))
+
     for requests_or_records in consumer:
 
         if requests_or_records.key == createAccessRequestKey: createAccessRequest(requests_or_records.value)
