@@ -18,8 +18,6 @@ def _insertIntoCache(recordsToBeInserted):
 
     keyToBeInserted = recordsToBeInserted["bucket"] + '/' + recordsToBeInserted["key"]
 
-    print("keyToBeInserted------->", keyToBeInserted)
-
     insertionResult = redisConnection.insertObject(keyToBeInserted, recordsToBeInserted["content"])
     if insertionResult == 1:
         logging.info("Error in Cache Insertion %s", recordsToBeInserted)
@@ -27,18 +25,15 @@ def _insertIntoCache(recordsToBeInserted):
 
 def consumer():
     consumer = KafkaConsumer(
-        'redis-cache',
+        'quick-access',
         bootstrap_servers=['localhost:9092'],
-        auto_offset_reset='latest',
         enable_auto_commit=True,
-        group_id='cache-writer',
+        group_id='cache-consumers',
         key_deserializer=lambda x: (x.decode('utf-8')),
         value_deserializer=lambda x: loads(x.decode('utf-8')))
 
     for record in consumer:
         print(record.value)
-
         if record.key == _insertCacheTask: _insertIntoCache(record.value)
-
 
 consumer()

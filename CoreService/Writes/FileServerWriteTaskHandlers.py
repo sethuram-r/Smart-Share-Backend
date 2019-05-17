@@ -15,8 +15,6 @@ class FileServerWriteTaskHandlers:
         self._CacheRole = config['HELPERS']['REDIS_CACHE']
         self._s3Connection = DataSourceFactory.DataSourceFactory().getS3Access()
 
-    def __deleteSavepointInBackground(self, selectedFiles):
-        SavepointHandler.SavepointHandler().deleteSavepoint(selectedFiles)
 
     def __rollBackSavepointForDeleteOperationInBackground(self, topicName, selectedFiles):
         SavepointHandler.SavepointHandler().rollBackforDeleteOperation(topicName, selectedFiles)
@@ -24,8 +22,8 @@ class FileServerWriteTaskHandlers:
     def __rollBackSavepointForUploadOperationInBackground(self, topicName, selectedFiles):
         SavepointHandler.SavepointHandler().rollbackForUploadOperation(topicName, selectedFiles)
 
-    def _pushFileToCache(self, eachFileToBeUploaded, selectedFileOrFolder, topicName):
-        ThreadServices.ThreadServices().pushToCacheStream(eachFileToBeUploaded, selectedFileOrFolder, topicName)
+    def _pushFileToCache(self, dataToBePlacedInTheStream):
+        ThreadServices.ThreadServices().pushToCacheStream(dataToBePlacedInTheStream)
 
 
 
@@ -93,6 +91,18 @@ class FileServerWriteTaskHandlers:
         accessRecord["accessing_users"] = usersAccessingThisRecord
         return accessRecord
 
+    def convertBtyeToExactString(self, byteString):
+        return str(byteString).replace("b'", "", 1).replace("'", "").strip()
+
+    def _cacheRecordFactory(self,s3Data,selectedFileOrFolder,topicName):
+
+        dataToBePlacedInTheStream = {}
+        dataToBePlacedInTheStream["content"] = self.convertBtyeToExactString(s3Data)
+        dataToBePlacedInTheStream["key"] = selectedFileOrFolder
+        dataToBePlacedInTheStream["bucket"] = topicName
+        return dataToBePlacedInTheStream
+
+
     def __pushFilesToTheCache(self, eachFileToBeUploaded, topicName):
 
         logging.info(" Thread: Inside __pushFilesToTheCache")
@@ -103,8 +113,9 @@ class FileServerWriteTaskHandlers:
             selectedFileOrFolder = eachFileToBeUploaded["path"] + eachFileToBeUploaded["name"]
 
         try:
+            dataToBePlacedInTheStream = self._cacheRecordFactory(eachFileToBeUploaded["file"],selectedFileOrFolder,topicName)
             thread = threading.Thread(target=self._pushFileToCache,
-                                      args=(eachFileToBeUploaded["file"], selectedFileOrFolder, topicName,))
+                                      args=(dataToBePlacedInTheStream,))
             thread.daemon = True
             thread.start()
         except:
@@ -112,15 +123,6 @@ class FileServerWriteTaskHandlers:
             return False
         return True
 
-    def _deleteTheCreatedSavepoint(self, filesToCreateSavepoint):
-        try:
-            deleteSavepointThread = threading.Thread(
-                target=self.__deleteSavepointInBackground,
-                args=(filesToCreateSavepoint,))
-            deleteSavepointThread.daemon = True
-            deleteSavepointThread.start()
-        except:
-            logging.warning("Error unable to delete Savepoint")
 
     def putTheUploadedFilesToCache(self, filesToBeUploaded, topicName):
 

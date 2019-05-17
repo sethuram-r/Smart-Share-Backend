@@ -1,5 +1,4 @@
 import re
-import re
 import threading
 
 from Classes import AmazonS3Class

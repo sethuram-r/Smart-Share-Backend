@@ -1,10 +1,14 @@
 from AccessManagementService.PostgresCommunicator.Models import ObjectRelationalModel
+from AccessManagementService import databaseInstance
 
 
 class ModelFactory:
 
     def __init__(self):
         self.objectRelationalModel = ObjectRelationalModel.ObjectRelationalModel()
+        tables = ["owner", "file", "file_user_access", "user", "permissions_assigned", "access_request"]
+        tableExists = [databaseInstance.engine.has_table(table, schema="access_management") for table in tables]
+        if False in tableExists: databaseInstance.create_all()
 
     def getAccessRequestObject(self):
         return self.objectRelationalModel.AccessRequest()

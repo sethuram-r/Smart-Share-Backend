@@ -1,0 +1,25 @@
+FROM ubuntu:latest
+
+LABEL maintainer= "sethuram975351 <sethuram500@gmail.com>"
+
+RUN apt-get update  && \
+    apt-get install python3-dev && pip3 install --upgrade pip
+
+
+WORKDIR /smart_share 
+
+# copy source code comlpete package to working directory along with requirement.txt
+COPY . /smart_share 
+
+RUN pip3 install -r requirement.txt
+
+
+EXPOSE 5001
+EXPOSE 5002
+EXPOSE 5003
+EXPOSE 5004
+EXPOSE 5005
+
+
+# have to run the startup script 
+CMD [ "/startup.sh" ]

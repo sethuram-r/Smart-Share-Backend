@@ -1,0 +1,9 @@
+###### Requirements without Version Specifiers ######
+kafka-python
+Flask==1.0.2
+Flask-SQLAlchemy
+pymongo
+redis
+requests
+datetime
+boto3

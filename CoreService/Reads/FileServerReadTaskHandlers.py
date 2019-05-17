@@ -38,7 +38,7 @@ class FileServerReadTaskHandlers:
 
 
 
-    def getFileOrFolder(self, selectedFileOrFolder, topicName):
+    def  getFileOrFolder(self, selectedFileOrFolder, topicName):
 
         logging.info("Inside getFileOrFolder")
 

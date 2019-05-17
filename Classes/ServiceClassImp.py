@@ -19,3 +19,4 @@ class ServiceClassImp(ServiceClass.ServiceClass):
 
         self.mongo_pool.release(self.mongo_connection)
         self.redis_pool.release(self.redis_connection)
+

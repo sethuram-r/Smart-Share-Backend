@@ -1,4 +1,4 @@
-import pprint as pp
+
 import re
 
 from CoreService import logging
@@ -118,7 +118,6 @@ class FileStructureTransformer:
                                                                                                      1).replace(
                                                                                  "/", "").strip()))
                     previous_split = i["objectName"]
-        pp.pprint(transformedResult)
         return transformedResult
 
     def filterValidS3Result(self, validS3Result):

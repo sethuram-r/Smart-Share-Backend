@@ -1,10 +1,12 @@
 import pprint as pp
 import threading
-
+import boto3
 import mongo_connection as mc
 import redis_connection as rc
 
-
+client=boto3.client('s3',aws_access_key_id="AKIAJEITGSW3HCSM56KA",
+                      aws_secret_access_key="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",
+                      region_name="eu-west-1")
 def data_structure_transformer(value, username):
     import pprint as pp
     import re
@@ -139,6 +141,7 @@ def get_object(bucket, key):
     import base64
     base64_encoded_value = base64.standard_b64encode(response["Body"].read())
 
+
     def worker():
         status = rc.insert_object(key, base64_encoded_value)
         print(status)
@@ -215,21 +218,14 @@ def roll_back(files):
 
 def create_replace_record(find_result, accept_result):
     replace_result = find_result
-    print(find_result["accessing_users"])
-    print(accept_result)
     temp = find_result["accessing_users"]
     for v in range(len(temp)):
-        print(temp[v])
+
         if temp[v]["name"] == accept_result["username"]:
-            print("inside 2")
-            print(accept_result["access"])
-            print(replace_result["accessing_users"][v])
             replace_result["accessing_users"][v][accept_result["access"]] = True
-            print("replace_result", replace_result)
             return replace_result
 
     file_to_new_append = {"name": accept_result["username"], accept_result["access"]: True}
-    print(file_to_new_append)
     find_result["accessing_users"].append(file_to_new_append)
     print(find_result)
     return find_result

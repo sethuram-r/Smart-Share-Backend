@@ -16,27 +16,15 @@ class ThreadServices:
         config.read('CoreConfig.ini')
         self._insertCacheTask = config['TASKS'][
             'INSERT_CACHE']
-
-    def convertBtyeToExactString(self, byteString):
-        return str(byteString).replace("b'", "", 1).replace("'", "").strip()
-
-    def pushToCacheStream(self, s3Data, selectedFileOrFolder, topicName):
-
-        producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
+        self._producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
                                  key_serializer=lambda x: x.encode('utf-8'),
                                  value_serializer=lambda x:
                                  dumps(x).encode('utf-8'))
 
-        # Record Preparation Begins..
 
-        data_to_placed_in_the_stream = {}
-        data_to_placed_in_the_stream["content"] = self.convertBtyeToExactString(s3Data)
-        data_to_placed_in_the_stream["key"] = selectedFileOrFolder
-        data_to_placed_in_the_stream["bucket"] = topicName
+    def pushToCacheStream(self, dataToBePlacedInTheStream):
 
-        # Record Preparation Ends...
-
-        result = producer.send('redis-cache', key=self._insertCacheTask, value=data_to_placed_in_the_stream)
+        result = self._producer.send("quick-access",key = self._insertCacheTask,value=dataToBePlacedInTheStream)
         sleep(5)
         if (result.is_done):
             logging.info("successfully pushed to cache")
