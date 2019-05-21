@@ -2,23 +2,35 @@
 
 echo  Started Running the startup Script.......
 
-nohup python -m AuthenticationService.RequestHandler --port 5001 >> log_file &
 
-nohup python  -m CoreService/Reads.RequestHandler --port 5002  >> log_file &
+echo  "running AuthenticationService.RequestHandler" >log_file
+nohup python3 -m AuthenticationService.RequestHandler 5001 >> log_file &
 
-nohup python  -m CoreService.Lock.LockServer --port 5003  >> log_file&
-
-nohup python  CoreService/Writes/RequestHandler.py --port 5004  >> log_file &
-
-nohup python  AccessManagementService/RequestHandler.py  >> log_file &
-
-nohup python  AuthenticationConsumer.py  >> log_file&
-
-nohup python  CacheConsumer.py  >> log_file&
-
-nohup python  PostgresConsumer.py   >> log_file&
+echo  "running CoreService.Reads.RequestHandler" >>log_file
+nohup python3  -m CoreService.Reads.RequestHandler 5002  >> log_file &
 
 
+echo  "running CoreService.Lock.LockServer " >>log_file
+nohup python3  -m CoreService.Lock.LockServer 5003  >> log_file &
+
+echo  "running C CoreService.Writes.RequestHandler " >>log_file
+nohup python3 -m  CoreService.Writes.RequestHandler 5004  >> log_file &
+
+
+echo  "running AccessManagementService.RequestHandler " >>log_file
+nohup python3 -m   AccessManagementService.RequestHandler 5005 >> log_file &
+
+sleep 8
+
+echo  "running AuthenticationConsumer " >>log_file
+nohup python3   AuthenticationConsumer.py  >> log_file &
+
+echo  "running CacheConsumer " >>log_file
+nohup python3  CacheConsumer.py  >> log_file &
+
+
+echo  "running PostgresConsumer " >>log_file
+python3  PostgresConsumer.py
 
 
 

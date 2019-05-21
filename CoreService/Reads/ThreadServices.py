@@ -4,7 +4,7 @@ from time import sleep
 
 from kafka import KafkaProducer
 
-from CoreService import logging
+from CoreService import logging, ip, port
 
 """ This class contains tasks / functions which are handled by threads """
 
@@ -24,7 +24,7 @@ class ThreadServices:
 
         """ Function to submit the signup request to the kafka stream """
 
-        producer = KafkaProducer(bootstrap_servers=['localhost:9092'], key_serializer=lambda x: x.encode('utf-8'),
+        producer = KafkaProducer(bootstrap_servers=[ip + ':' + port], key_serializer=lambda x: x.encode('utf-8'),
                                  value_serializer=lambda x:
                                  dumps(x).encode('utf-8'))
 
@@ -37,7 +37,7 @@ class ThreadServices:
 
         # Record Preparation Ends...
 
-        result = producer.send('redisCache', key=self._insertCacheTask, value=data_to_placed_in_the_stream)
+        result = producer.send('cache', key=self._insertCacheTask, value=data_to_placed_in_the_stream)
         sleep(10)
         if result.is_done:
             logging.info("The record have been successfully pushed to the stream")

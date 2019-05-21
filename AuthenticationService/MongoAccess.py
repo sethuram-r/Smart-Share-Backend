@@ -10,7 +10,7 @@ class MongoAccess:
         config = configparser.ConfigParser()
         config.read('AuthenticationConfig.ini')
         mongo_database = config['MONGO']['DATABASE']
-        self.client = MongoClient()
+        self.client = MongoClient(host="mongo")
         self.database = self.client.get_database(name=mongo_database)
 
     def return_collection(self, collection_name):

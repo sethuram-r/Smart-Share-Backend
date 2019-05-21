@@ -1,6 +1,6 @@
 import configparser
 
-from CoreService.Redis import RedisCache, RedisTransaction, RedisLock
+from CoreService.Redis import RedisCache, RedisLock
 
 """This class is used to access the Redis Databases. """
 
@@ -11,10 +11,6 @@ class RedisAccess:
 
         config = configparser.ConfigParser()
         config.read('CoreConfig.ini')
-        # self.__redisCache = config['HELPERS']['REDIS_CACHE']
-        # self.__redisLock = config['HELPERS']['REDIS_LOCK']
-        # self.__redisTransaction = config['HELPERS']['REDIS_TRANSACTION']
-
         self.__redisCache = "cache"
         self.__redisLock = "lock"
         self.__redisTransaction = "transaction"
@@ -26,18 +22,7 @@ class RedisAccess:
 
         if role == self.__redisLock: return RedisLock.RedisLock()
 
-        if role == self.__redisTransaction: return RedisTransaction.RedisTransaction()
+        # if role == self.__redisTransaction: return RedisTransaction.RedisTransaction()
 
-
-
-
-# Have to check where it is used....
-
-#
-# def type_of_key(self, key):
-#     return self.redis_client.type(key)
-#
-# def get_keys(self, pattern):
-#     return self.redis_client.keys(pattern)
 
 RedisAccess()

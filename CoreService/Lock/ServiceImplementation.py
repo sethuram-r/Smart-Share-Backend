@@ -16,7 +16,6 @@ class ServiceImplementation:
         self.selectedFileOrFolder = config['HELPERS']['SELECTED_FILE_OR_FOLDER']
         self.request = request
 
-    ## lockObjects has been renamed to following function name
 
     def lockFileOrFolder(self):
         """ This function is used to put and release the lock for request file or folders """

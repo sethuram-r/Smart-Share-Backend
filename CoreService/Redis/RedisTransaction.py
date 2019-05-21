@@ -24,9 +24,6 @@ class RedisTransaction:
         overallresult = True if (insertionResult == True and settingExpiryResult == True) else False
         return overallresult
 
-    # def deleteSavepoint(self, **arg):      have doubt ehy i gave parameter as dicyionary arguement
-    #     deleteResult = self._redisClient.delete("backup:" + arg["key"])
-    #     return deleteResult
 
     def deleteSavepoint(self, key):
         deleteResult = self._redisClient.delete("backup:" + key)

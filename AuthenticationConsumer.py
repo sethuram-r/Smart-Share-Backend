@@ -1,4 +1,5 @@
 import configparser
+import os
 from json import loads
 
 from kafka import KafkaConsumer
@@ -62,10 +63,11 @@ class AuthenticationConsumer:
 
 
     def consumer(self):
-
+        ip = os.environ["KAFKA_IP"]
+        port = os.environ["KAFKA_PORT"]
         consumer = KafkaConsumer(
             'authentication',
-            bootstrap_servers=['localhost:9092'],
+            bootstrap_servers=[ip + ':' + port],
             auto_offset_reset='earliest',
             enable_auto_commit=True,
             group_id='authentication-group'

@@ -1,0 +1,82 @@
+version: '3'
+services:
+  cgi:
+    image: cgi:latest
+    depends_on:
+      - app
+    links:
+      - app
+    ports:
+      - "9000:9000"
+    environment:
+      - APPLICATION_IP=app
+  postgres:
+    restart: on-failure
+    build: ./PostrgesDatabaseConfiguration/
+    hostname: postgres
+    environment:
+      - POSTGRES_PASSWORD=Luffy@143
+      - POSTGRES_DB=smart_share
+    expose:
+      - "5432"
+  app:
+    build: .
+    restart: on-failure
+    hostname: app
+    environment:
+      - KAFKA_IP=kafka
+      - KAFKA_PORT=9092
+    depends_on:
+      - kafka
+      - postgres
+      - mongo
+      - lock
+      - cache
+    links:
+      - kafka
+      - postgres
+      - mongo
+      - lock
+      - cache
+    ports:
+      - "5001:5001"
+      - "5002:5002"
+      - "5003:5003"
+      - "5004:5004"
+      - "5005:5005"
+    entrypoint: ./startup.sh
+  lock:
+    restart: on-failure
+    image: redis:latest
+    hostname: lock
+    expose:
+      - "6379"
+  cache:
+    restart: on-failure
+    image: redis:latest
+    hostname: cache
+    expose:
+      - "6379"
+  mongo:
+    image: mongo:latest
+    restart: on-failure
+    environment:
+      - MONGO_INITDB_DATABASE=authentication_db
+    ports:
+      - "27017:27017"
+  zookeeper:
+    image: wurstmeister/zookeeper
+  kafka:
+    image: wurstmeister/kafka
+    hostname: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - KAFKA_CREATE_TOPICS=authentication,cache,access_management
+
+
+

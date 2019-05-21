@@ -7,3 +7,4 @@ redis
 requests
 datetime
 boto3
+#psycopg2

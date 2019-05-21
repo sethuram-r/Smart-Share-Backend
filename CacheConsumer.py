@@ -1,4 +1,5 @@
 import configparser
+import os
 from json import loads
 
 from kafka import KafkaConsumer
@@ -24,9 +25,11 @@ def _insertIntoCache(recordsToBeInserted):
 
 
 def consumer():
+    ip = os.environ["KAFKA_IP"]
+    port = os.environ["KAFKA_PORT"]
     consumer = KafkaConsumer(
-        'quick-access',
-        bootstrap_servers=['localhost:9092'],
+        'cache',
+        bootstrap_servers=[ip + ':' + port],
         enable_auto_commit=True,
         group_id='cache-consumers',
         key_deserializer=lambda x: (x.decode('utf-8')),

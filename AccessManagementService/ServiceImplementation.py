@@ -4,7 +4,7 @@ from time import sleep
 
 from kafka import KafkaProducer
 
-from AccessManagementService import logging
+from AccessManagementService import logging, ip, port
 from AccessManagementService.PostgresCommunicator import PostgresReadTaskHandler
 
 """ This class is the Access Management implementation  done through various task handlers."""
@@ -17,9 +17,7 @@ class ServiceImplementation:
         config = configparser.ConfigParser()
         config.read('AccessManagementConfig.ini')
         self.request = request
-        # self.modelInstance = modelInstance
-        # self.databaseInstance = databaseInstance
-        self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'], key_serializer=lambda x: x.encode('utf-8'),
+        self.producer = KafkaProducer(bootstrap_servers=[ip + ':' + port], key_serializer=lambda x: x.encode('utf-8'),
                                       value_serializer=lambda x:
                                       dumps(x).encode('utf-8'))
 

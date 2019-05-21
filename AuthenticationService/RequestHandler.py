@@ -1,4 +1,5 @@
 import json
+import sys
 
 from flask import Flask, request, jsonify
 
@@ -35,3 +36,6 @@ def catch_all(path):
     return jsonify(service.result)
 
 
+if __name__ == '__main__':
+    port = sys.argv[1]
+    Flask.run(app, "0.0.0.0", port=port)

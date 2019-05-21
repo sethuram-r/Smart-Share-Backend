@@ -4,7 +4,7 @@ from time import sleep
 
 from kafka import KafkaProducer
 
-from CoreService import logging
+from CoreService import logging, ip, port
 from CoreService.Writes import FileServerWriteTaskHandlers
 
 """ This class contains tasks / functions which are handled by threads """
@@ -16,15 +16,14 @@ class ThreadServices:
         config.read('CoreConfig.ini')
         self._insertCacheTask = config['TASKS'][
             'INSERT_CACHE']
-        self._producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
-                                 key_serializer=lambda x: x.encode('utf-8'),
-                                 value_serializer=lambda x:
+        self._producer = KafkaProducer(bootstrap_servers=[ip + ':' + port],
+                                       key_serializer=lambda x: x.encode('utf-8'),
+                                       value_serializer=lambda x:
                                  dumps(x).encode('utf-8'))
 
 
     def pushToCacheStream(self, dataToBePlacedInTheStream):
-
-        result = self._producer.send("quick-access",key = self._insertCacheTask,value=dataToBePlacedInTheStream)
+        result = self._producer.send("cache", key=self._insertCacheTask, value=dataToBePlacedInTheStream)
         sleep(5)
         if (result.is_done):
             logging.info("successfully pushed to cache")

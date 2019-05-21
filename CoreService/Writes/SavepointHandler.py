@@ -1,7 +1,7 @@
 import configparser
 import re
 
-from CoreService import DataSourceFactory, logging
+from CoreService import logging
 from CoreService.Writes import FileMetaDataApi, OtherApiCallsForDifferentServers
 
 """ This class is used to handle tasks corresponding to Transactions"""
@@ -16,7 +16,7 @@ class SavepointHandler:
         self._otherApiCallsForDifferentServers = OtherApiCallsForDifferentServers.OtherApiCallsForDifferentServers()
         self._fileExtension = re.compile("([a-zA-Z0-9\s_\\.\-\(\):])+(\..*)$")
         self._transactionRole = config['HELPERS']['REDIS_TRANSACTION']
-        self._redisConnection = DataSourceFactory.DataSourceFactory().getRedisAccess(self._transactionRole)
+        # self._redisConnection = DataSourceFactory.DataSourceFactory().getRedisAccess(self._transactionRole)
         self.defaultTopicName = config['HELPERS']['DEFAULT_TOPIC_NAME']
 
     def __createSavepointDataFromS3ForEachFile(self, topicName, selectedFile):

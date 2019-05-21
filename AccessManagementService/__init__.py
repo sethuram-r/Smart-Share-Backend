@@ -1,5 +1,6 @@
 import configparser
 import logging
+import os
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -14,3 +15,5 @@ databaseInstance = SQLAlchemy(app)
 databaseInstance.metadata.schema = config['POSTGRES']['SCHEMA']
 logging.basicConfig(format='%(levelname)s: %(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
                     level=logging.INFO)
+ip = os.environ["KAFKA_IP"]
+port = os.environ["KAFKA_PORT"]

@@ -1,5 +1,6 @@
 import configparser
 import hashlib
+import os
 import random
 import string
 from json import dumps
@@ -19,6 +20,12 @@ class ServiceImplementation:
         self.username = config['HELPERS']['USER_NAME']
         self.sessionId = config['HELPERS']['SESSION_ID']
         self.request = request
+        self.ip = os.environ["KAFKA_IP"]
+        self.port = os.environ["KAFKA_PORT"]
+        self.producer = KafkaProducer(bootstrap_servers=[self.ip + ':' + self.port],
+                                      key_serializer=lambda x: x.encode('utf-8'),
+                                      value_serializer=lambda x:
+                                      dumps(x).encode('utf-8'))
 
     """ ----------------------------------------Helper Functions------------------------------------------------"""
 
@@ -43,13 +50,10 @@ class ServiceImplementation:
         """ Function to submit the signup request to the kafka stream """
         logging.info("Inside signUp")
 
-        producer = KafkaProducer(bootstrap_servers=['localhost:9092'], key_serializer=lambda x: x.encode('utf-8'),
-                                 value_serializer=lambda x:
-                                 dumps(x).encode('utf-8'))
 
         data_to_placed_in_the_stream = self.request["data"]
 
-        result = producer.send('authentication', key=self.request["task"], value=data_to_placed_in_the_stream)
+        result = self.producer.send('authentication', key=self.request["task"], value=data_to_placed_in_the_stream)
         sleep(5)
         if (result.is_done):
             logging.debug("Successfully pushed to the stream")
@@ -77,12 +81,8 @@ class ServiceImplementation:
 
             # put the record in the kafka stream so that it can be consumed by other consumers
 
-            producer = KafkaProducer(bootstrap_servers=['localhost:9092'], key_serializer=lambda x: x.encode('utf-8'),
-                                     value_serializer=lambda x:
-                                     dumps(x).encode('utf-8'))
-
             data_to_placed_in_the_stream = duplicatedLoginCredentials
-            result = producer.send('authentication', key=self.request["task"], value=data_to_placed_in_the_stream)
+            result = self.producer.send('authentication', key=self.request["task"], value=data_to_placed_in_the_stream)
             sleep(5)
             if (result.is_done):
                 logging.debug("Successfully pushed to the stream")
@@ -113,12 +113,8 @@ class ServiceImplementation:
 
         logging.info("Inside logOut")
         userToBeLoggedOut = self.request["param"]
-        producer = KafkaProducer(bootstrap_servers=['localhost:9092'], key_serializer=lambda x: x.encode('utf-8'),
-                                 value_serializer=lambda x:
-                                 dumps(x).encode('utf-8'))
-
         data_to_placed_in_the_stream = userToBeLoggedOut
-        result = producer.send('authentication', key=self.request["task"], value=data_to_placed_in_the_stream)
+        result = self.producer.send('authentication', key=self.request["task"], value=data_to_placed_in_the_stream)
         sleep(5)
         if (result.is_done):
             logging.debug("Successfully logged out")

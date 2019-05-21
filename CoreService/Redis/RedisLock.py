@@ -14,6 +14,7 @@ class RedisLock:
         hostName = config['REDIS']['LOCK_HOST']
         port = int(config['REDIS']['LOCK_PORT'])
         db = int(config['REDIS']['DATABASE'])
+
         self._redisClient = redis.Redis(host=hostName, port=port, db=db)
 
     def insertLock(self, key):
