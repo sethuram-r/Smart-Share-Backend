@@ -3,7 +3,7 @@ Documentation can be viewed in this link https://docs.google.com/document/d/e/2P
 
 # Build
 
-docker-compose up --build \n
+docker-compose up --build  
 This will start the application in the port 9000 of your localhost
 
 Disclaimer: Latest version is available in the branch
