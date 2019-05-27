@@ -3,6 +3,9 @@ Documentation can be viewed in this link https://docs.google.com/document/d/e/2P
 
 # Build
 
+Pre-requisites:
+  Build image with name and tag cgi:latest from Common Gateway Interface respoitory
+
 docker-compose up --build  
 This will start the application in the port 9000 of your localhost
 
